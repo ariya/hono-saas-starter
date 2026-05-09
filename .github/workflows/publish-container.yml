@@ -42,7 +42,7 @@ jobs:
 
     steps:
       - name: Run the container
-        run: docker run -d --rm --name hello-hono -p 3000:3000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        run: docker run -d --rm --name hono-saas-starter -p 3000:3000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Run the health check validation
         run: while ! curl -s 'http://localhost:3000/health' | grep 'OK'; do sleep 1; done

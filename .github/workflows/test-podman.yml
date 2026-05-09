@@ -14,9 +14,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - run: podman build -t hello-hono .
+      - run: podman build -t hono-saas-starter .
 
-      - run: podman run -d -p 3000:3000 hello-hono
+      - run: podman run -d -p 3000:3000 hono-saas-starter
 
       - name: Run the health check validation
         run: while ! curl -s 'http://localhost:3000/health' | grep 'OK'; do sleep 1; done
