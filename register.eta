@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Register</title>
+<% if (it.redirect) { %>
+<meta http-equiv="refresh" content="2;url=<%= it.redirect %>">
+<% } %>
 <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css">
 <script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
 </head>

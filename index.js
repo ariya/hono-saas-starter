@@ -108,7 +108,12 @@ app.post('/', async (c) => {
 });
 
 app.get('/register', async (c) => {
-  const html = await eta.renderAsync('register', { error: null, success: null, csrf: generateCsrfToken() });
+  const html = await eta.renderAsync('register', {
+    error: null,
+    success: null,
+    redirect: null,
+    csrf: generateCsrfToken()
+  });
   return c.html(html);
 });
 
@@ -119,11 +124,30 @@ app.post('/register', async (c) => {
     const html = await eta.renderAsync('register', {
       error: 'Password must be at least 8 characters.',
       success: null,
+      redirect: null,
       csrf: generateCsrfToken()
     });
     return c.html(html, 422);
   }
-  return c.redirect('/');
+  if (users.has(email)) {
+    const html = await eta.renderAsync('register', {
+      error: 'An account with that email already exists.',
+      success: null,
+      redirect: null,
+      csrf: generateCsrfToken()
+    });
+    return c.html(html, 409);
+  }
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = await hashPassword(password, salt);
+  users.set(email, { email, hash, salt });
+  const html = await eta.renderAsync('register', {
+    error: null,
+    success: 'Account created! Redirecting to sign in...',
+    redirect: '/',
+    csrf: generateCsrfToken()
+  });
+  return c.html(html);
 });
 
 app.get('/profile', async (c) => {
