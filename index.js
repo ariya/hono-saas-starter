@@ -38,15 +38,20 @@ function signSession(email) {
 }
 
 function verifySession(token) {
-  const dot = token.lastIndexOf('.');
-  if (dot === -1) return null;
-  const email = token.slice(0, dot);
-  const sig = token.slice(dot + 1);
-  const hmac = crypto.createHmac('sha256', HMAC_SECRET);
-  hmac.update(email);
-  const expected = hmac.digest('hex');
-  const match = crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
-  return match ? email : null;
+  try {
+    const dot = token.lastIndexOf('.');
+    if (dot === -1) return null;
+    const email = token.slice(0, dot);
+    const sig = token.slice(dot + 1);
+    const hmac = crypto.createHmac('sha256', HMAC_SECRET);
+    hmac.update(email);
+    const expected = hmac.digest('hex');
+    if (Buffer.from(sig, 'hex').length !== Buffer.from(expected, 'hex').length) return null;
+    const match = crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
+    return match ? email : null;
+  } catch {
+    return null;
+  }
 }
 
 function generateCsrfToken() {
