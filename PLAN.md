@@ -29,7 +29,7 @@
 - [x] [C3] Include a creation timestamp in session tokens and reject expired sessions server-side.
 
 ### High
-- [ ] [H1] Store an opaque random session ID in the cookie instead of the plaintext email.
+- [x] [H1] Store an opaque random session ID in the cookie instead of the plaintext email.
 - [x] [H2] Add a timestamp to CSRF tokens and reject tokens older than 1 hour.
 - [x] [H3] Add server-side rate limiting on POST /sign-in and POST /register (per-IP).
 - [x] [H4] Return a generic success message on duplicate email registration to prevent user enumeration.

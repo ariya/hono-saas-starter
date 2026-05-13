@@ -48,29 +48,35 @@ async function verifyPassword(password, hash, salt) {
 }
 
 const SESSION_MAX_AGE = 7 * 60 * 60;
+const SESSION_KEY = crypto
+  .createHash('sha256')
+  .update('session:' + HMAC_SECRET)
+  .digest();
 
-function signSession(email) {
+function encryptSession(email) {
   const ts = Math.floor(Date.now() / 1000);
-  const payload = `${email}:${ts}`;
-  const sig = crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('hex');
-  return `${payload}.${sig}`;
+  const plaintext = `${email}:${ts}`;
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', SESSION_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, encrypted]).toString('base64url');
 }
 
-function verifySession(token) {
+function decryptSession(token) {
   try {
-    const dot = token.lastIndexOf('.');
-    if (dot === -1) return null;
-    const payload = token.slice(0, dot);
-    const sig = token.slice(dot + 1);
-    const expected = crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('hex');
-    const expectedBuf = Buffer.from(expected, 'hex');
-    const sigBuf = Buffer.from(sig, 'hex');
-    if (sigBuf.length !== expectedBuf.length) return null;
-    if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) return null;
-    const colon = payload.lastIndexOf(':');
+    const buf = Buffer.from(token, 'base64url');
+    if (buf.length < 29) return null;
+    const iv = buf.subarray(0, 12);
+    const tag = buf.subarray(12, 28);
+    const encrypted = buf.subarray(28);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', SESSION_KEY, iv);
+    decipher.setAuthTag(tag);
+    const plaintext = decipher.update(encrypted, undefined, 'utf8') + decipher.final('utf8');
+    const colon = plaintext.lastIndexOf(':');
     if (colon === -1) return null;
-    const email = payload.slice(0, colon);
-    const ts = parseInt(payload.slice(colon + 1), 10);
+    const email = plaintext.slice(0, colon);
+    const ts = parseInt(plaintext.slice(colon + 1), 10);
     if (isNaN(ts) || Math.floor(Date.now() / 1000) - ts > SESSION_MAX_AGE) return null;
     return email;
   } catch {
@@ -114,7 +120,7 @@ const welcomeTitles = ['Welcome back!', 'Good to see you!', 'Hello again!', 'Wel
 app.get('/', async (c) => {
   const cookie = c.req.header('Cookie') || '';
   const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
-  const email = match ? verifySession(decodeURIComponent(match[1])) : null;
+  const email = match ? decryptSession(decodeURIComponent(match[1])) : null;
   if (email) return c.redirect('/profile');
   const title = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
   const html = await eta.renderAsync('signin', { title, error: null, csrf: generateCsrfToken() });
@@ -151,7 +157,7 @@ app.post('/', async (c) => {
   }
   const maxAge = 7 * 60 * 60;
   const secureFlag = isProduction ? '; Secure' : '';
-  const token = signSession(email);
+  const token = encryptSession(email);
   c.header(
     'Set-Cookie',
     `session=${encodeURIComponent(token)}; Path=/; HttpOnly${secureFlag}; Max-Age=${maxAge}; SameSite=Lax`
@@ -201,7 +207,7 @@ app.post('/register', async (c) => {
 app.get('/profile', async (c) => {
   const cookie = c.req.header('Cookie') || '';
   const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
-  const email = match ? verifySession(decodeURIComponent(match[1])) : null;
+  const email = match ? decryptSession(decodeURIComponent(match[1])) : null;
   if (!email) return c.redirect('/');
   const html = await eta.renderAsync('profile', { email });
   return c.html(html);
