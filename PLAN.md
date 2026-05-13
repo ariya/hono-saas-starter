@@ -36,4 +36,4 @@
 
 ### Medium
 - [x] [M1] Replace GET /signout with a POST form to prevent CSRF-based forced logout.
-- [ ] [M2] Validate email format server-side before storing or signing.
+- [x] [M2] Validate email format server-side before storing or signing.

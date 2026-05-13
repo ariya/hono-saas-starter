@@ -115,6 +115,10 @@ function verifyCsrfToken(token) {
   }
 }
 
+function isValidEmail(value) {
+  return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;
+}
+
 const welcomeTitles = ['Welcome back!', 'Good to see you!', 'Hello again!', 'Welcome!', "Glad you're here!"];
 
 app.get('/', async (c) => {
@@ -135,7 +139,7 @@ app.post('/', async (c) => {
   if (!verifyCsrfToken(csrf)) {
     return c.text('Invalid request', 403);
   }
-  if (!password || password.length > 1024) {
+  if (!isValidEmail(email) || !password || password.length > 1024) {
     const title = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
     const html = await eta.renderAsync('signin', {
       title,
@@ -181,6 +185,15 @@ app.post('/register', async (c) => {
   }
   const { email, password, csrf } = await c.req.parseBody();
   if (!verifyCsrfToken(csrf)) return c.text('Invalid request', 403);
+  if (!isValidEmail(email)) {
+    const html = await eta.renderAsync('register', {
+      error: 'Please enter a valid email address.',
+      success: null,
+      redirect: null,
+      csrf: generateCsrfToken()
+    });
+    return c.html(html, 422);
+  }
   if (!password || password.length < 8 || password.length > 1024) {
     const html = await eta.renderAsync('register', {
       error: 'Password must be between 8 and 1024 characters.',
