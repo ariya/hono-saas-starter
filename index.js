@@ -159,6 +159,11 @@ app.get('/profile', async (c) => {
   return c.html(html);
 });
 
+app.get('/signout', (c) => {
+  c.header('Set-Cookie', 'session=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax');
+  return c.redirect('/');
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
