@@ -32,7 +32,7 @@
 - [ ] [H1] Store an opaque random session ID in the cookie instead of the plaintext email.
 - [ ] [H2] Add a timestamp to CSRF tokens and reject tokens older than 1 hour.
 - [ ] [H3] Add server-side rate limiting on POST /sign-in and POST /register (per-IP).
-- [ ] [H4] Return a generic success message on duplicate email registration to prevent user enumeration.
+- [x] [H4] Return a generic success message on duplicate email registration to prevent user enumeration.
 
 ### Medium
 - [ ] [M1] Replace GET /signout with a POST form to prevent CSRF-based forced logout.

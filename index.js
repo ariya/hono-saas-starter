@@ -151,18 +151,11 @@ app.post('/register', async (c) => {
     });
     return c.html(html, 422);
   }
-  if (users.has(email)) {
-    const html = await eta.renderAsync('register', {
-      error: 'An account with that email already exists.',
-      success: null,
-      redirect: null,
-      csrf: generateCsrfToken()
-    });
-    return c.html(html, 409);
+  if (!users.has(email)) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = await hashPassword(password, salt);
+    users.set(email, { email, hash, salt });
   }
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = await hashPassword(password, salt);
-  users.set(email, { email, hash, salt });
   const html = await eta.renderAsync('register', {
     error: null,
     success: 'Account created! Redirecting to sign in...',
