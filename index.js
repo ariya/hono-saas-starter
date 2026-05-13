@@ -19,6 +19,22 @@ const HMAC_SECRET =
 app.use(secureHeaders());
 
 const users = new Map();
+const rateLimitStore = new Map();
+
+function isRateLimited(namespace, ip, maxAttempts, windowSeconds) {
+  const now = Date.now();
+  const windowMs = windowSeconds * 1000;
+  const key = `${namespace}:${ip}`;
+  const timestamps = (rateLimitStore.get(key) || []).filter((t) => now - t < windowMs);
+  if (timestamps.length >= maxAttempts) return true;
+  timestamps.push(now);
+  rateLimitStore.set(key, timestamps);
+  return false;
+}
+
+function getClientIp(c) {
+  return c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || c.req.header('x-real-ip') || 'unknown';
+}
 
 async function hashPassword(password, salt) {
   return new Promise((resolve, reject) => {
@@ -106,6 +122,9 @@ app.get('/', async (c) => {
 });
 
 app.post('/', async (c) => {
+  if (isRateLimited('login', getClientIp(c), 5, 15 * 60)) {
+    return c.text('Too many attempts. Please wait before trying again.', 429);
+  }
   const { email, password, csrf } = await c.req.parseBody();
   if (!verifyCsrfToken(csrf)) {
     return c.text('Invalid request', 403);
@@ -151,6 +170,9 @@ app.get('/register', async (c) => {
 });
 
 app.post('/register', async (c) => {
+  if (isRateLimited('register', getClientIp(c), 3, 15 * 60)) {
+    return c.text('Too many attempts. Please wait before trying again.', 429);
+  }
   const { email, password, csrf } = await c.req.parseBody();
   if (!verifyCsrfToken(csrf)) return c.text('Invalid request', 403);
   if (!password || password.length < 8 || password.length > 1024) {
