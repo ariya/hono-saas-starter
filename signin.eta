@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In</title>
+<link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css">
+<script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
+</head>
+<body>
+<main style="max-width:400px;margin:50px auto;padding:20px">
+<h1><%= it.title %></h1>
+<% if (it.error) { %>
+<p style="color:red"><%= it.error %></p>
+<% } %>
+<form method="POST" action="/">
+<label for="email">Email</label>
+<input type="email" id="email" name="email" required>
+<label for="password">Password</label>
+<input type="password" id="password" name="password" required>
+<button type="submit">Sign In</button>
+</form>
+</main>
+</body>
+</html>
