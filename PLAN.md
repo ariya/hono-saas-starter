@@ -35,5 +35,5 @@
 - [x] [H4] Return a generic success message on duplicate email registration to prevent user enumeration.
 
 ### Medium
-- [ ] [M1] Replace GET /signout with a POST form to prevent CSRF-based forced logout.
+- [x] [M1] Replace GET /signout with a POST form to prevent CSRF-based forced logout.
 - [ ] [M2] Validate email format server-side before storing or signing.

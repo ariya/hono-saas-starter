@@ -10,7 +10,10 @@
 <body>
 <nav style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid #ddd">
 <span><%= it.email %></span>
-<a href="/signout"><button type="button">Sign Out</button></a>
+<form method="POST" action="/signout" style="margin:0">
+<input type="hidden" name="csrf" value="<%= it.csrf %>">
+<button type="submit">Sign Out</button>
+</form>
 </nav>
 <main style="max-width:800px;margin:40px auto;padding:20px">
 <h1>Profile</h1>

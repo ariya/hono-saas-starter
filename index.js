@@ -209,11 +209,13 @@ app.get('/profile', async (c) => {
   const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
   const email = match ? decryptSession(decodeURIComponent(match[1])) : null;
   if (!email) return c.redirect('/');
-  const html = await eta.renderAsync('profile', { email });
+  const html = await eta.renderAsync('profile', { email, csrf: generateCsrfToken() });
   return c.html(html);
 });
 
-app.get('/signout', (c) => {
+app.post('/signout', async (c) => {
+  const { csrf } = await c.req.parseBody();
+  if (!verifyCsrfToken(csrf)) return c.text('Invalid request', 403);
   c.header('Set-Cookie', 'session=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax');
   return c.redirect('/');
 });
