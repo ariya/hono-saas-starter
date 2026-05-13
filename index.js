@@ -8,6 +8,13 @@ const crypto = require('crypto');
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname) });
 const isProduction = process.env.NODE_ENV === 'production';
+const HMAC_SECRET =
+  process.env.HMAC_SECRET ||
+  (isProduction
+    ? (() => {
+        throw new Error('HMAC_SECRET env var is required in production');
+      })()
+    : 'dev-secret');
 
 app.use(secureHeaders());
 
@@ -25,7 +32,7 @@ async function verifyPassword(password, hash, salt) {
 }
 
 function signSession(email) {
-  const hmac = crypto.createHmac('sha256', process.env.HMAC_SECRET || 'dev-secret');
+  const hmac = crypto.createHmac('sha256', HMAC_SECRET);
   hmac.update(email);
   return `${email}.${hmac.digest('hex')}`;
 }
@@ -35,7 +42,7 @@ function verifySession(token) {
   if (dot === -1) return null;
   const email = token.slice(0, dot);
   const sig = token.slice(dot + 1);
-  const hmac = crypto.createHmac('sha256', process.env.HMAC_SECRET || 'dev-secret');
+  const hmac = crypto.createHmac('sha256', HMAC_SECRET);
   hmac.update(email);
   const expected = hmac.digest('hex');
   const match = crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
