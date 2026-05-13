@@ -86,6 +86,15 @@ app.post('/', async (c) => {
   if (!verifyCsrfToken(csrf)) {
     return c.text('Invalid request', 403);
   }
+  if (!password || password.length > 1024) {
+    const title = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
+    const html = await eta.renderAsync('signin', {
+      title,
+      error: 'Invalid email or password.',
+      csrf: generateCsrfToken()
+    });
+    return c.html(html, 401);
+  }
   const user = users.get(email);
   const valid = user ? await verifyPassword(password, user.hash, user.salt) : false;
   if (!valid) {
@@ -120,9 +129,9 @@ app.get('/register', async (c) => {
 app.post('/register', async (c) => {
   const { email, password, csrf } = await c.req.parseBody();
   if (!verifyCsrfToken(csrf)) return c.text('Invalid request', 403);
-  if (!password || password.length < 8) {
+  if (!password || password.length < 8 || password.length > 1024) {
     const html = await eta.renderAsync('register', {
-      error: 'Password must be at least 8 characters.',
+      error: 'Password must be between 8 and 1024 characters.',
       success: null,
       redirect: null,
       csrf: generateCsrfToken()

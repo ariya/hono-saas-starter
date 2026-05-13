@@ -24,7 +24,7 @@
 ## Security Audit
 
 ### Critical
-- [ ] [C1] Enforce maximum password length (1024 chars) to prevent scrypt-based DoS via huge input.
+- [x] [C1] Enforce maximum password length (1024 chars) to prevent scrypt-based DoS via huge input.
 - [ ] [C2] Wrap `verifySession` in try-catch to prevent unhandled 500 on malformed cookie tokens.
 - [ ] [C3] Include a creation timestamp in session tokens and reject expired sessions server-side.
 
