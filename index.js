@@ -29,7 +29,9 @@ app.post('/', async (c) => {
   const user = users.get(email);
   const valid = user ? await verifyPassword(password, user.hash, user.salt) : false;
   if (!valid) {
-    return c.text('Invalid credentials', 401);
+    const title = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
+    const html = await eta.renderAsync('signin', { title, error: 'Invalid email or password.' });
+    return c.html(html, 401);
   }
   return c.redirect('/profile');
 });
