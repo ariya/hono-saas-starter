@@ -33,6 +33,7 @@ app.post('/', async (c) => {
     const html = await eta.renderAsync('signin', { title, error: 'Invalid email or password.' });
     return c.html(html, 401);
   }
+  c.header('Set-Cookie', `session=${email}; Path=/; HttpOnly`);
   return c.redirect('/profile');
 });
 
