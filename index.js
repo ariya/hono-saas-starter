@@ -107,6 +107,11 @@ app.post('/', async (c) => {
   return c.redirect('/profile');
 });
 
+app.get('/register', async (c) => {
+  const html = await eta.renderAsync('register', { error: null, success: null, csrf: generateCsrfToken() });
+  return c.html(html);
+});
+
 app.get('/profile', async (c) => {
   const cookie = c.req.header('Cookie') || '';
   const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
