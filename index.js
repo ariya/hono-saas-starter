@@ -9,6 +9,8 @@ const eta = new Eta({ views: path.join(__dirname) });
 
 app.use(secureHeaders());
 
+const users = new Map();
+
 const welcomeTitles = ['Welcome back!', 'Good to see you!', 'Hello again!', 'Welcome!', "Glad you're here!"];
 
 app.get('/', async (c) => {
