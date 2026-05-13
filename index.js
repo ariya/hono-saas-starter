@@ -72,6 +72,10 @@ function verifyCsrfToken(token) {
 const welcomeTitles = ['Welcome back!', 'Good to see you!', 'Hello again!', 'Welcome!', "Glad you're here!"];
 
 app.get('/', async (c) => {
+  const cookie = c.req.header('Cookie') || '';
+  const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
+  const email = match ? verifySession(decodeURIComponent(match[1])) : null;
+  if (email) return c.redirect('/profile');
   const title = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
   const html = await eta.renderAsync('signin', { title, error: null, csrf: generateCsrfToken() });
   return c.html(html);
