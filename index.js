@@ -112,6 +112,20 @@ app.get('/register', async (c) => {
   return c.html(html);
 });
 
+app.post('/register', async (c) => {
+  const { email, password, csrf } = await c.req.parseBody();
+  if (!verifyCsrfToken(csrf)) return c.text('Invalid request', 403);
+  if (!password || password.length < 8) {
+    const html = await eta.renderAsync('register', {
+      error: 'Password must be at least 8 characters.',
+      success: null,
+      csrf: generateCsrfToken()
+    });
+    return c.html(html, 422);
+  }
+  return c.redirect('/');
+});
+
 app.get('/profile', async (c) => {
   const cookie = c.req.header('Cookie') || '';
   const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
