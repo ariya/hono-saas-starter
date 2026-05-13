@@ -9,8 +9,11 @@ const eta = new Eta({ views: path.join(__dirname) });
 
 app.use(secureHeaders());
 
+const welcomeTitles = ['Welcome back!', 'Good to see you!', 'Hello again!', 'Welcome!', "Glad you're here!"];
+
 app.get('/', async (c) => {
-  const html = await eta.renderAsync('signin', { title: 'Welcome', error: null });
+  const title = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
+  const html = await eta.renderAsync('signin', { title, error: null });
   return c.html(html);
 });
 
