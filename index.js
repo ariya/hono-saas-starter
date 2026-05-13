@@ -31,24 +31,32 @@ async function verifyPassword(password, hash, salt) {
   return crypto.timingSafeEqual(Buffer.from(derived), Buffer.from(hash));
 }
 
+const SESSION_MAX_AGE = 7 * 60 * 60;
+
 function signSession(email) {
-  const hmac = crypto.createHmac('sha256', HMAC_SECRET);
-  hmac.update(email);
-  return `${email}.${hmac.digest('hex')}`;
+  const ts = Math.floor(Date.now() / 1000);
+  const payload = `${email}:${ts}`;
+  const sig = crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('hex');
+  return `${payload}.${sig}`;
 }
 
 function verifySession(token) {
   try {
     const dot = token.lastIndexOf('.');
     if (dot === -1) return null;
-    const email = token.slice(0, dot);
+    const payload = token.slice(0, dot);
     const sig = token.slice(dot + 1);
-    const hmac = crypto.createHmac('sha256', HMAC_SECRET);
-    hmac.update(email);
-    const expected = hmac.digest('hex');
-    if (Buffer.from(sig, 'hex').length !== Buffer.from(expected, 'hex').length) return null;
-    const match = crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
-    return match ? email : null;
+    const expected = crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('hex');
+    const expectedBuf = Buffer.from(expected, 'hex');
+    const sigBuf = Buffer.from(sig, 'hex');
+    if (sigBuf.length !== expectedBuf.length) return null;
+    if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) return null;
+    const colon = payload.lastIndexOf(':');
+    if (colon === -1) return null;
+    const email = payload.slice(0, colon);
+    const ts = parseInt(payload.slice(colon + 1), 10);
+    if (isNaN(ts) || Math.floor(Date.now() / 1000) - ts > SESSION_MAX_AGE) return null;
+    return email;
   } catch {
     return null;
   }
