@@ -33,7 +33,8 @@ app.post('/', async (c) => {
     const html = await eta.renderAsync('signin', { title, error: 'Invalid email or password.' });
     return c.html(html, 401);
   }
-  c.header('Set-Cookie', `session=${email}; Path=/; HttpOnly`);
+  const maxAge = 7 * 60 * 60;
+  c.header('Set-Cookie', `session=${email}; Path=/; HttpOnly; Secure; Max-Age=${maxAge}; SameSite=Lax`);
   return c.redirect('/profile');
 });
 
