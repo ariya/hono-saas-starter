@@ -3,6 +3,7 @@ const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname) });
@@ -12,9 +13,33 @@ app.use(secureHeaders());
 
 const users = new Map();
 
+async function hashPassword(password, salt) {
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, 64, (err, key) => (err ? reject(err) : resolve(key.toString('hex'))));
+  });
+}
+
 async function verifyPassword(password, hash, salt) {
-  const testHash = Buffer.from(password + salt).toString('base64');
-  return testHash === hash;
+  const derived = await hashPassword(password, salt);
+  return crypto.timingSafeEqual(Buffer.from(derived), Buffer.from(hash));
+}
+
+function signSession(email) {
+  const hmac = crypto.createHmac('sha256', process.env.HMAC_SECRET || 'dev-secret');
+  hmac.update(email);
+  return `${email}.${hmac.digest('hex')}`;
+}
+
+function verifySession(token) {
+  const dot = token.lastIndexOf('.');
+  if (dot === -1) return null;
+  const email = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  const hmac = crypto.createHmac('sha256', process.env.HMAC_SECRET || 'dev-secret');
+  hmac.update(email);
+  const expected = hmac.digest('hex');
+  const match = crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
+  return match ? email : null;
 }
 
 const welcomeTitles = ['Welcome back!', 'Good to see you!', 'Hello again!', 'Welcome!', "Glad you're here!"];
@@ -36,7 +61,11 @@ app.post('/', async (c) => {
   }
   const maxAge = 7 * 60 * 60;
   const secureFlag = isProduction ? '; Secure' : '';
-  c.header('Set-Cookie', `session=${email}; Path=/; HttpOnly${secureFlag}; Max-Age=${maxAge}; SameSite=Lax`);
+  const token = signSession(email);
+  c.header(
+    'Set-Cookie',
+    `session=${encodeURIComponent(token)}; Path=/; HttpOnly${secureFlag}; Max-Age=${maxAge}; SameSite=Lax`
+  );
   return c.redirect('/profile');
 });
 
