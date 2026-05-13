@@ -49,21 +49,48 @@ function verifySession(token) {
   return match ? email : null;
 }
 
+function generateCsrfToken() {
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const sig = crypto.createHmac('sha256', HMAC_SECRET).update(nonce).digest('hex');
+  return `${nonce}.${sig}`;
+}
+
+function verifyCsrfToken(token) {
+  if (!token || typeof token !== 'string') return false;
+  const dot = token.lastIndexOf('.');
+  if (dot === -1) return false;
+  const nonce = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  const expected = crypto.createHmac('sha256', HMAC_SECRET).update(nonce).digest('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
+  } catch {
+    return false;
+  }
+}
+
 const welcomeTitles = ['Welcome back!', 'Good to see you!', 'Hello again!', 'Welcome!', "Glad you're here!"];
 
 app.get('/', async (c) => {
   const title = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
-  const html = await eta.renderAsync('signin', { title, error: null });
+  const html = await eta.renderAsync('signin', { title, error: null, csrf: generateCsrfToken() });
   return c.html(html);
 });
 
 app.post('/', async (c) => {
-  const { email, password } = await c.req.parseBody();
+  const { email, password, csrf } = await c.req.parseBody();
+  if (!verifyCsrfToken(csrf)) {
+    return c.text('Invalid request', 403);
+  }
   const user = users.get(email);
   const valid = user ? await verifyPassword(password, user.hash, user.salt) : false;
   if (!valid) {
     const title = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
-    const html = await eta.renderAsync('signin', { title, error: 'Invalid email or password.' });
+    const html = await eta.renderAsync('signin', {
+      title,
+      error: 'Invalid email or password.',
+      csrf: generateCsrfToken()
+    });
     return c.html(html, 401);
   }
   const maxAge = 7 * 60 * 60;
