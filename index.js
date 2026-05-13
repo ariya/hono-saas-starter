@@ -6,6 +6,7 @@ const path = require('path');
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname) });
+const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(secureHeaders());
 
@@ -34,7 +35,8 @@ app.post('/', async (c) => {
     return c.html(html, 401);
   }
   const maxAge = 7 * 60 * 60;
-  c.header('Set-Cookie', `session=${email}; Path=/; HttpOnly; Secure; Max-Age=${maxAge}; SameSite=Lax`);
+  const secureFlag = isProduction ? '; Secure' : '';
+  c.header('Set-Cookie', `session=${email}; Path=/; HttpOnly${secureFlag}; Max-Age=${maxAge}; SameSite=Lax`);
   return c.redirect('/profile');
 });
 
