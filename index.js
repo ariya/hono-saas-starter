@@ -62,21 +62,32 @@ function verifySession(token) {
   }
 }
 
+const CSRF_MAX_AGE = 60 * 60;
+
 function generateCsrfToken() {
   const nonce = crypto.randomBytes(16).toString('hex');
-  const sig = crypto.createHmac('sha256', HMAC_SECRET).update(nonce).digest('hex');
-  return `${nonce}.${sig}`;
+  const ts = Math.floor(Date.now() / 1000);
+  const payload = `${nonce}:${ts}`;
+  const sig = crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('hex');
+  return `${payload}.${sig}`;
 }
 
 function verifyCsrfToken(token) {
   if (!token || typeof token !== 'string') return false;
-  const dot = token.lastIndexOf('.');
-  if (dot === -1) return false;
-  const nonce = token.slice(0, dot);
-  const sig = token.slice(dot + 1);
-  const expected = crypto.createHmac('sha256', HMAC_SECRET).update(nonce).digest('hex');
   try {
-    return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
+    const dot = token.lastIndexOf('.');
+    if (dot === -1) return false;
+    const payload = token.slice(0, dot);
+    const sig = token.slice(dot + 1);
+    const expected = crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('hex');
+    const expectedBuf = Buffer.from(expected, 'hex');
+    const sigBuf = Buffer.from(sig, 'hex');
+    if (sigBuf.length !== expectedBuf.length) return false;
+    if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) return false;
+    const colon = payload.lastIndexOf(':');
+    if (colon === -1) return false;
+    const ts = parseInt(payload.slice(colon + 1), 10);
+    return !isNaN(ts) && Math.floor(Date.now() / 1000) - ts <= CSRF_MAX_AGE;
   } catch {
     return false;
   }
