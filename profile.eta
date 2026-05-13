@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile</title>
+<link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css">
+<script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
+</head>
+<body>
+<nav style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid #ddd">
+<span><%= it.email %></span>
+<a href="/signout"><button type="button">Sign Out</button></a>
+</nav>
+<main style="max-width:800px;margin:40px auto;padding:20px">
+<h1>Profile</h1>
+</main>
+</body>
+</html>

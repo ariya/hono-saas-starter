@@ -103,6 +103,15 @@ app.post('/', async (c) => {
   return c.redirect('/profile');
 });
 
+app.get('/profile', async (c) => {
+  const cookie = c.req.header('Cookie') || '';
+  const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
+  const email = match ? verifySession(decodeURIComponent(match[1])) : null;
+  if (!email) return c.redirect('/');
+  const html = await eta.renderAsync('profile', { email });
+  return c.html(html);
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
