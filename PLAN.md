@@ -20,3 +20,20 @@
 - [x] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [x] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
 - [x] Implement the /signout handler to clear session cookies and redirect to the landing page.
+
+## Security Audit
+
+### Critical
+- [ ] [C1] Enforce maximum password length (1024 chars) to prevent scrypt-based DoS via huge input.
+- [ ] [C2] Wrap `verifySession` in try-catch to prevent unhandled 500 on malformed cookie tokens.
+- [ ] [C3] Include a creation timestamp in session tokens and reject expired sessions server-side.
+
+### High
+- [ ] [H1] Store an opaque random session ID in the cookie instead of the plaintext email.
+- [ ] [H2] Add a timestamp to CSRF tokens and reject tokens older than 1 hour.
+- [ ] [H3] Add server-side rate limiting on POST /sign-in and POST /register (per-IP).
+- [ ] [H4] Return a generic success message on duplicate email registration to prevent user enumeration.
+
+### Medium
+- [ ] [M1] Replace GET /signout with a POST form to prevent CSRF-based forced logout.
+- [ ] [M2] Validate email format server-side before storing or signing.
