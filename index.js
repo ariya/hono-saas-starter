@@ -10,6 +10,7 @@ const app = new Hono();
 app.use(secureHeaders());
 
 const users = new Map();
+const sessions = new Map();
 
 const welcomeTitles = ['Welcome', 'Hello There', 'Good to See You', 'Sign In Below', 'Access Your Account'];
 
@@ -36,7 +37,10 @@ app.post('/', async (c) => {
   if (!valid) {
     return c.html(eta.render('sign-in.eta', { title: welcomeTitles[0], error: 'Invalid credentials' }), 401);
   }
-  return c.text('Authenticated');
+  const token = crypto.randomBytes(32).toString('hex');
+  sessions.set(token, body.email);
+  c.header('Set-Cookie', `session=${token}; HttpOnly; Path=/`);
+  return c.redirect('/profile');
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
