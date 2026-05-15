@@ -8,6 +8,9 @@
 <body>
 <nav style="display:flex;justify-content:space-between;align-items:center;">
 <div><%= it.email %></div>
+<form method="post" action="/signout">
+<button type="submit">Sign Out</button>
+</form>
 </nav>
 <h1>Profile</h1>
 </body>
