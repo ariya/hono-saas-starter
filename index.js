@@ -148,7 +148,7 @@ app.get('/register', (c) => {
 app.get('/profile', (c) => {
   const email = getSessionEmail(c);
   if (!email) return c.redirect('/');
-  return c.html(eta.render('profile.eta'));
+  return c.html(eta.render('profile.eta', { email }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));

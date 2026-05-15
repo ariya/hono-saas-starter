@@ -6,6 +6,9 @@
 <title>Profile</title>
 </head>
 <body>
-<p>Welcome to your profile.</p>
+<nav style="display:flex;justify-content:space-between;align-items:center;">
+<div><%= it.email %></div>
+</nav>
+<h1>Profile</h1>
 </body>
 </html>
