@@ -10,6 +10,7 @@ const app = new Hono();
 app.use(secureHeaders());
 
 const users = new Map();
+const rateLimits = new Map();
 
 const dummySalt = crypto.randomBytes(16).toString('hex');
 const dummyHash = crypto.randomBytes(64).toString('hex');
@@ -38,6 +39,25 @@ function verifyPassword(password, salt, hash) {
 const hmacSecret = process.env.HMAC_SECRET;
 if (!hmacSecret) {
   throw new Error('HMAC_SECRET environment variable is required');
+}
+
+function getClientIp(c) {
+  const forwarded = c.req.header('x-forwarded-for');
+  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+}
+
+function checkRateLimit(key, maxAttempts, windowMs) {
+  const now = Date.now();
+  const record = rateLimits.get(key);
+  if (!record || now > record.resetAt) {
+    rateLimits.set(key, { attempts: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (record.attempts >= maxAttempts) {
+    return false;
+  }
+  record.attempts += 1;
+  return true;
 }
 
 function signSession(email) {
@@ -88,6 +108,9 @@ app.get('/', (c) => {
 });
 
 app.post('/', async (c) => {
+  if (!checkRateLimit(`login:${getClientIp(c)}`, 5, 15 * 60 * 1000)) {
+    return c.html(eta.render('sign-in.eta', { title: welcomeTitles[0], error: 'Too many attempts' }), 429);
+  }
   const body = await c.req.parseBody();
   if (!verifyCsrfToken(body.csrf)) {
     return c.html(eta.render('sign-in.eta', { title: welcomeTitles[0], error: 'Invalid request' }), 403);
@@ -117,6 +140,9 @@ function getSessionEmail(c) {
 }
 
 app.post('/register', async (c) => {
+  if (!checkRateLimit(`register:${getClientIp(c)}`, 3, 15 * 60 * 1000)) {
+    return c.html(eta.render('register.eta', { csrf: generateCsrfToken(), error: 'Too many attempts' }), 429);
+  }
   const body = await c.req.parseBody();
   if (!verifyCsrfToken(body.csrf)) {
     return c.html(eta.render('register.eta', { csrf: generateCsrfToken(), error: 'Invalid request' }), 403);

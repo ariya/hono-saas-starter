@@ -27,7 +27,7 @@
 
 - [*] Fix timing attack on sign-in endpoint: missing user returns immediately, while invalid password triggers scrypt, enabling user enumeration.
 - [*] Add `SameSite=Strict` attribute to session cookies to prevent cross-site cookie transmission and CSRF bypass.
-- [ ] Implement basic in-memory rate limiting on `/` POST and `/register` POST to mitigate brute-force and account creation abuse.
+- [*] Implement basic in-memory rate limiting on `/` POST and `/register` POST to mitigate brute-force and account creation abuse.
 - [ ] Remove user enumeration from registration: "Email already registered" error leaks registered accounts.
 
 ### HIGH
