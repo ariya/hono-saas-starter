@@ -40,7 +40,11 @@ app.post('/', async (c) => {
   const token = crypto.randomBytes(32).toString('hex');
   sessions.set(token, body.email);
   const expires = new Date(Date.now() + 7 * 60 * 60 * 1000).toUTCString();
-  c.header('Set-Cookie', `session=${token}; HttpOnly; Secure; Path=/; Expires=${expires}`);
+  const secureFlag = process.env.NODE_ENV === 'production' ? 'Secure' : '';
+  c.header(
+    'Set-Cookie',
+    `session=${token}; HttpOnly; Path=/; Expires=${expires}${secureFlag ? `; ${secureFlag}` : ''}`
+  );
   return c.redirect('/profile');
 });
 
