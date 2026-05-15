@@ -44,6 +44,20 @@ function signSession(email) {
   return `${payload}.${signature}`;
 }
 
+function generateCsrfToken() {
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const signature = crypto.createHmac('sha256', hmacSecret).update(nonce).digest('hex');
+  return `${nonce}.${signature}`;
+}
+
+function verifyCsrfToken(token) {
+  const parts = token.split('.');
+  if (parts.length !== 2) return false;
+  const [nonce, signature] = parts;
+  const expected = crypto.createHmac('sha256', hmacSecret).update(nonce).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
+
 function verifySession(token) {
   const parts = token.split('.');
   if (parts.length !== 2) return null;
@@ -60,11 +74,19 @@ function verifySession(token) {
 }
 
 app.get('/', (c) =>
-  c.html(eta.render('sign-in.eta', { title: welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)] }))
+  c.html(
+    eta.render('sign-in.eta', {
+      title: welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)],
+      csrf: generateCsrfToken()
+    })
+  )
 );
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
+  if (!verifyCsrfToken(body.csrf)) {
+    return c.html(eta.render('sign-in.eta', { title: welcomeTitles[0], error: 'Invalid request' }), 403);
+  }
   const user = users.get(body.email);
   if (!user) {
     return c.html(eta.render('sign-in.eta', { title: welcomeTitles[0], error: 'Invalid credentials' }), 401);
