@@ -29,9 +29,13 @@ app.get('/', (c) =>
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
   const user = users.get(body.email);
-  if (!user) return c.text('Invalid credentials', 401);
+  if (!user) {
+    return c.html(eta.render('sign-in.eta', { title: welcomeTitles[0], error: 'Invalid credentials' }), 401);
+  }
   const valid = await verifyPassword(body.password, user.salt, user.hash);
-  if (!valid) return c.text('Invalid credentials', 401);
+  if (!valid) {
+    return c.html(eta.render('sign-in.eta', { title: welcomeTitles[0], error: 'Invalid credentials' }), 401);
+  }
   return c.text('Authenticated');
 });
 

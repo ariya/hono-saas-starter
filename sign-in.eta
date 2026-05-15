@@ -7,6 +7,9 @@
 </head>
 <body>
 <h1><%= it.title %></h1>
+<% if (it.error) { %>
+<p style="color:red"><%= it.error %></p>
+<% } %>
 <form method="post" action="/">
 <label>Email <input type="email" name="email" required></label>
 <label>Password <input type="password" name="password" required></label>
