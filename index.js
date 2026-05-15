@@ -151,6 +151,15 @@ app.get('/profile', (c) => {
   return c.html(eta.render('profile.eta', { email }));
 });
 
+app.post('/signout', (c) => {
+  const secureFlag = process.env.NODE_ENV === 'production' ? 'Secure' : '';
+  c.header(
+    'Set-Cookie',
+    `session=; HttpOnly; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secureFlag ? `; ${secureFlag}` : ''}`
+  );
+  return c.redirect('/');
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
