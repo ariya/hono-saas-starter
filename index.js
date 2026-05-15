@@ -32,7 +32,10 @@ function verifyPassword(password, salt, hash) {
   });
 }
 
-const hmacSecret = process.env.HMAC_SECRET || 'dev-secret-change-me';
+const hmacSecret = process.env.HMAC_SECRET;
+if (!hmacSecret) {
+  throw new Error('HMAC_SECRET environment variable is required');
+}
 
 function signSession(email) {
   const exp = Date.now() + 7 * 60 * 60 * 1000;
