@@ -73,14 +73,16 @@ function verifySession(token) {
   }
 }
 
-app.get('/', (c) =>
-  c.html(
+app.get('/', (c) => {
+  const email = getSessionEmail(c);
+  if (email) return c.redirect('/profile');
+  return c.html(
     eta.render('sign-in.eta', {
       title: welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)],
       csrf: generateCsrfToken()
     })
-  )
-);
+  );
+});
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
