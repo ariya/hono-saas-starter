@@ -11,6 +11,9 @@ app.use(secureHeaders());
 
 const users = new Map();
 
+const dummySalt = crypto.randomBytes(16).toString('hex');
+const dummyHash = crypto.randomBytes(64).toString('hex');
+
 const welcomeTitles = ['Welcome', 'Hello There', 'Good to See You', 'Sign In Below', 'Access Your Account'];
 
 function hashPassword(password) {
@@ -90,11 +93,10 @@ app.post('/', async (c) => {
     return c.html(eta.render('sign-in.eta', { title: welcomeTitles[0], error: 'Invalid request' }), 403);
   }
   const user = users.get(body.email);
-  if (!user) {
-    return c.html(eta.render('sign-in.eta', { title: welcomeTitles[0], error: 'Invalid credentials' }), 401);
-  }
-  const valid = await verifyPassword(body.password, user.salt, user.hash);
-  if (!valid) {
+  const salt = user ? user.salt : dummySalt;
+  const hash = user ? user.hash : dummyHash;
+  const valid = await verifyPassword(body.password, salt, hash);
+  if (!user || !valid) {
     return c.html(eta.render('sign-in.eta', { title: welcomeTitles[0], error: 'Invalid credentials' }), 401);
   }
   const token = signSession(body.email);
@@ -129,6 +131,9 @@ app.post('/register', async (c) => {
     return c.html(eta.render('register.eta', { csrf: generateCsrfToken(), error: 'Email already registered' }), 409);
   }
   const hashed = await hashPassword(body.password);
+  if (!hashed) {
+    return c.html(eta.render('register.eta', { csrf: generateCsrfToken(), error: 'Registration failed' }), 500);
+  }
   users.set(body.email, { email: body.email, salt: hashed.salt, hash: hashed.hash });
   return c.html(
     `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="2;url=/"><title>Registered</title></head><body><p>Registration successful. Redirecting...</p></body></html>`
