@@ -114,6 +114,20 @@ function getSessionEmail(c) {
   return verifySession(match[1]);
 }
 
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(body.csrf)) {
+    return c.html(eta.render('register.eta', { csrf: generateCsrfToken(), error: 'Invalid request' }), 403);
+  }
+  if (!body.password || body.password.length < 8) {
+    return c.html(
+      eta.render('register.eta', { csrf: generateCsrfToken(), error: 'Password must be at least 8 characters' }),
+      400
+    );
+  }
+  return c.text('Registration logic pending');
+});
+
 app.get('/register', (c) => {
   const email = getSessionEmail(c);
   if (email) return c.redirect('/profile');
