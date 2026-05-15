@@ -8,7 +8,11 @@ const app = new Hono();
 
 app.use(secureHeaders());
 
-app.get('/', (c) => c.html(eta.render('sign-in.eta')));
+const welcomeTitles = ['Welcome', 'Hello There', 'Good to See You', 'Sign In Below', 'Access Your Account'];
+
+app.get('/', (c) =>
+  c.html(eta.render('sign-in.eta', { title: welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)] }))
+);
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
