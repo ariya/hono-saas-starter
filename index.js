@@ -104,7 +104,7 @@ app.post('/', async (c) => {
   const secureFlag = process.env.NODE_ENV === 'production' ? 'Secure' : '';
   c.header(
     'Set-Cookie',
-    `session=${token}; HttpOnly; Path=/; Expires=${expires}${secureFlag ? `; ${secureFlag}` : ''}`
+    `session=${token}; HttpOnly; Path=/; SameSite=Strict; Expires=${expires}${secureFlag ? `; ${secureFlag}` : ''}`
   );
   return c.redirect('/profile');
 });
@@ -160,7 +160,7 @@ app.post('/signout', (c) => {
   const secureFlag = process.env.NODE_ENV === 'production' ? 'Secure' : '';
   c.header(
     'Set-Cookie',
-    `session=; HttpOnly; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secureFlag ? `; ${secureFlag}` : ''}`
+    `session=; HttpOnly; Path=/; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secureFlag ? `; ${secureFlag}` : ''}`
   );
   return c.redirect('/');
 });
