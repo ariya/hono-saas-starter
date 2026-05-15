@@ -39,7 +39,8 @@ app.post('/', async (c) => {
   }
   const token = crypto.randomBytes(32).toString('hex');
   sessions.set(token, body.email);
-  c.header('Set-Cookie', `session=${token}; HttpOnly; Path=/`);
+  const expires = new Date(Date.now() + 7 * 60 * 60 * 1000).toUTCString();
+  c.header('Set-Cookie', `session=${token}; HttpOnly; Secure; Path=/; Expires=${expires}`);
   return c.redirect('/profile');
 });
 
