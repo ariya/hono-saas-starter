@@ -8,6 +8,8 @@ const app = new Hono();
 
 app.use(secureHeaders());
 
+const users = new Map();
+
 const welcomeTitles = ['Welcome', 'Hello There', 'Good to See You', 'Sign In Below', 'Access Your Account'];
 
 app.get('/', (c) =>
