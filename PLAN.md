@@ -32,15 +32,14 @@
 
 ### HIGH
 
-- [ ] Add server-side email format validation to prevent malformed or oversized inputs.
-- [ ] Enforce Content Security Policy headers via `secureHeaders` configuration.
-- [ ] Add HTTPS redirect enforcement in production when requests arrive over HTTP.
+- [*] Add server-side email format validation to prevent malformed or oversized inputs.
+- [*] Enforce Content Security Policy headers via `secureHeaders` configuration.
+- [*] Add HTTPS redirect enforcement in production when requests arrive over HTTP.
 
 ### MEDIUM
-
-- [ ] Remove inline styles from templates to remain compatible with a strict CSP.
-- [ ] Bind session tokens to a client fingerprint (e.g., user-agent hash) to reduce token portability if stolen.
-- [ ] Add account lockout or exponential backoff after repeated failed authentication attempts.
+- [*] Remove inline styles from templates to remain compatible with a strict CSP.
+- [*] Bind session tokens to a client fingerprint (e.g., user-agent hash) to reduce token portability if stolen.
+- [*] Add account lockout or exponential backoff after repeated failed authentication attempts.
 
 ### LOW
 
