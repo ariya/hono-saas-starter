@@ -114,6 +114,16 @@ function getSessionEmail(c) {
   return verifySession(match[1]);
 }
 
+app.get('/register', (c) => {
+  const email = getSessionEmail(c);
+  if (email) return c.redirect('/profile');
+  return c.html(
+    eta.render('register.eta', {
+      csrf: generateCsrfToken()
+    })
+  );
+});
+
 app.get('/profile', (c) => {
   const email = getSessionEmail(c);
   if (!email) return c.redirect('/');
