@@ -105,6 +105,19 @@ app.post('/', async (c) => {
   return c.redirect('/profile');
 });
 
+function getSessionEmail(c) {
+  const cookie = c.req.header('Cookie') || '';
+  const match = cookie.match(/session=([^;]+)/);
+  if (!match) return null;
+  return verifySession(match[1]);
+}
+
+app.get('/profile', (c) => {
+  const email = getSessionEmail(c);
+  if (!email) return c.redirect('/');
+  return c.html(eta.render('profile.eta'));
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
