@@ -125,7 +125,14 @@ app.post('/register', async (c) => {
       400
     );
   }
-  return c.text('Registration logic pending');
+  if (users.has(body.email)) {
+    return c.html(eta.render('register.eta', { csrf: generateCsrfToken(), error: 'Email already registered' }), 409);
+  }
+  const hashed = await hashPassword(body.password);
+  users.set(body.email, { email: body.email, salt: hashed.salt, hash: hashed.hash });
+  return c.html(
+    `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="2;url=/"><title>Registered</title></head><body><p>Registration successful. Redirecting...</p></body></html>`
+  );
 });
 
 app.get('/register', (c) => {
