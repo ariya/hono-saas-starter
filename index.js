@@ -153,14 +153,13 @@ app.post('/register', async (c) => {
       400
     );
   }
-  if (users.has(body.email)) {
-    return c.html(eta.render('register.eta', { csrf: generateCsrfToken(), error: 'Email already registered' }), 409);
+  if (!users.has(body.email)) {
+    const hashed = await hashPassword(body.password);
+    if (!hashed) {
+      return c.html(eta.render('register.eta', { csrf: generateCsrfToken(), error: 'Registration failed' }), 500);
+    }
+    users.set(body.email, { email: body.email, salt: hashed.salt, hash: hashed.hash });
   }
-  const hashed = await hashPassword(body.password);
-  if (!hashed) {
-    return c.html(eta.render('register.eta', { csrf: generateCsrfToken(), error: 'Registration failed' }), 500);
-  }
-  users.set(body.email, { email: body.email, salt: hashed.salt, hash: hashed.hash });
   return c.html(
     `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="2;url=/"><title>Registered</title></head><body><p>Registration successful. Redirecting...</p></body></html>`
   );
