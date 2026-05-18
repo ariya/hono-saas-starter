@@ -10,3 +10,8 @@ npm install
 npm start
 ```
 
+See the following branches for how this starter kit was evolved:
+
+- with Sonnet 4.6: [claude-code/sonnet-4.6](https://github.com/ariya/hono-saas-starter/tree/claude-code/sonnet-4.6) branch
+- with Kimi 2.6: [opencode/kimi-2.6](https://github.com/ariya/hono-saas-starter/tree/opencode/kimi-2.6) branch
+
