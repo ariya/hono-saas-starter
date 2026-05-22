@@ -75,7 +75,8 @@ app.get('/', (c) => {
   }
   const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
   const csrfToken = generateCsrf(c);
-  return c.html(eta.render('./signin', { welcome, csrfToken }));
+  const success = c.req.query('success');
+  return c.html(eta.render('./signin', { welcome, csrfToken, success }));
 });
 
 app.post('/signin', async (c) => {
@@ -126,11 +127,18 @@ app.post('/register', async (c) => {
   const body = await c.req.parseBody();
   const email = body.email;
   const password = body.password;
-  if (!password || password.length < 8) {
+  if (!email || !password || password.length < 8) {
     const csrfToken = generateCsrf(c);
     return c.html(eta.render('./register', { csrfToken, error: 'Password must be at least 8 characters long' }));
   }
-  return c.text('OK');
+  if (users.has(email)) {
+    const csrfToken = generateCsrf(c);
+    return c.html(eta.render('./register', { csrfToken, error: 'User already exists' }));
+  }
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = crypto.scryptSync(password, salt, 64).toString('hex');
+  users.set(email, { email, passwordHash, salt });
+  return c.redirect('/?success=Registration+successful.+Please+sign+in.');
 });
 
 app.get('/profile', (c) => {
