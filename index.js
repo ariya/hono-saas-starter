@@ -32,11 +32,13 @@ app.post('/signin', async (c) => {
   const password = body.password;
   const user = users.get(email);
   if (!user) {
-    return c.text('Invalid credentials', 401);
+    const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
+    return c.html(eta.render('./signin', { welcome, error: 'Invalid email or password' }));
   }
   const hash = crypto.scryptSync(password, user.salt, 64).toString('hex');
   if (hash !== user.passwordHash) {
-    return c.text('Invalid credentials', 401);
+    const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
+    return c.html(eta.render('./signin', { welcome, error: 'Invalid email or password' }));
   }
   return c.text('Success');
 });
