@@ -118,6 +118,21 @@ app.get('/register', (c) => {
   return c.html(eta.render('./register', { csrfToken }));
 });
 
+app.post('/register', async (c) => {
+  if (!(await verifyCsrf(c))) {
+    const csrfToken = generateCsrf(c);
+    return c.html(eta.render('./register', { csrfToken, error: 'Invalid or missing CSRF token' }));
+  }
+  const body = await c.req.parseBody();
+  const email = body.email;
+  const password = body.password;
+  if (!password || password.length < 8) {
+    const csrfToken = generateCsrf(c);
+    return c.html(eta.render('./register', { csrfToken, error: 'Password must be at least 8 characters long' }));
+  }
+  return c.text('OK');
+});
+
 app.get('/profile', (c) => {
   const session = getCookie(c, 'session');
   const email = verifySession(session);
