@@ -3,6 +3,7 @@ const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = new Hono();
 
@@ -23,6 +24,21 @@ const welcomes = [
 app.get('/', (c) => {
   const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
   return c.html(eta.render('./signin', { welcome }));
+});
+
+app.post('/signin', async (c) => {
+  const body = await c.req.parseBody();
+  const email = body.email;
+  const password = body.password;
+  const user = users.get(email);
+  if (!user) {
+    return c.text('Invalid credentials', 401);
+  }
+  const hash = crypto.scryptSync(password, user.salt, 64).toString('hex');
+  if (hash !== user.passwordHash) {
+    return c.text('Invalid credentials', 401);
+  }
+  return c.text('Success');
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
