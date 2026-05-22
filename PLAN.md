@@ -11,7 +11,7 @@
 - [x] Use scrypt for password hashing and HMAC for session cookie validation.
 - [x] Secure the HMAC secret, retrieve from the `HMAC_SECRET` env.
 - [x] Implement CSRF protection using an HMAC-signed token, passed via a hidden input field.
-- [ ] Build the /profile route with session validation; redirect unauthenticated users to /.
+- [x] Build the /profile route with session validation; redirect unauthenticated users to /.
 - [ ] Update the landing page to auto-redirect active sessions to /profile.
 - [ ] Add a "Register for account" link to the sign-in interface.
 - [ ] Create the /register route and an Eta-rendered registration page.
