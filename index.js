@@ -104,16 +104,20 @@ app.post('/signin', async (c) => {
   const email = body.email;
   const password = body.password;
   const user = users.get(email);
-  if (!user) {
+  const salt = user ? user.salt : '0000000000000000';
+  const expectedHash = user ? user.passwordHash : '0'.repeat(128);
+  const hash = await scryptAsync(password, salt, 64);
+  const isHashValid = crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(expectedHash, 'hex'));
+  if (!user || !isHashValid) {
     const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
     const csrfToken = generateCsrf(c);
-    return c.html(eta.render('./signin', { welcome, csrfToken, error: 'Invalid email or password' }));
-  }
-  const hash = await scryptAsync(password, user.salt, 64);
-  if (hash !== user.passwordHash) {
-    const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
-    const csrfToken = generateCsrf(c);
-    return c.html(eta.render('./signin', { welcome, csrfToken, error: 'Invalid email or password' }));
+    return c.html(
+      eta.render('./signin', {
+        welcome,
+        csrfToken,
+        error: 'Invalid email or password'
+      })
+    );
   }
   setCookie(c, 'session', signSession(email), {
     path: '/',

@@ -29,7 +29,7 @@
 
 ## High
 - [x] Mitigate Denial of Service (DoS) and Event Loop blocking by replacing synchronous `crypto.scryptSync` with asynchronous promise-based `crypto.scrypt`.
-- [ ] Mitigate user enumeration timing attack on sign-in by always performing a dummy hash comparison when a user is not found.
+- [x] Mitigate user enumeration timing attack on sign-in by always performing a dummy hash comparison when a user is not found.
 
 ## Medium
 - [ ] Add production safeguard warning or error if `HMAC_SECRET` environment variable is not configured.
