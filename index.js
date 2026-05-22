@@ -14,6 +14,13 @@ app.use(secureHeaders());
 
 const users = new Map();
 
+if (!process.env.HMAC_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('HMAC_SECRET environment variable is required in production');
+  } else {
+    console.warn('Warning: HMAC_SECRET env variable is not set. A temporary random secret is being used.');
+  }
+}
 const secretKey = process.env.HMAC_SECRET || crypto.randomBytes(32).toString('hex');
 
 const signSession = (email) => {

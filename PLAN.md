@@ -32,6 +32,6 @@
 - [x] Mitigate user enumeration timing attack on sign-in by always performing a dummy hash comparison when a user is not found.
 
 ## Medium
-- [ ] Add production safeguard warning or error if `HMAC_SECRET` environment variable is not configured.
+- [x] Add production safeguard warning or error if `HMAC_SECRET` environment variable is not configured.
 - [ ] Implement email format validation and length limits on registration and sign-in to prevent malformed or oversized inputs.
 
