@@ -7,10 +7,19 @@
   <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css">
 </head>
 <body>
+  <header>
+    <nav class="container">
+      <ul>
+        <li><strong><%= it.email %></strong></li>
+      </ul>
+      <ul>
+      </ul>
+    </nav>
+  </header>
   <main class="container">
     <section>
-      <h2>Profile</h2>
-      <p>Welcome to your profile, <%= it.email %>!</p>
+      <h2>Welcome Back!</h2>
+      <p>This is your secure, authenticated SaaS profile dashboard. You can access all dashboard features from here.</p>
     </section>
   </main>
 </body>
