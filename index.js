@@ -59,7 +59,10 @@ const verifyCsrf = async (c) => {
   const cookieSecret = getCookie(c, '_csrf');
   if (!cookieSecret || cookieSecret !== csrfSecret) return false;
   const expectedSig = crypto.createHmac('sha256', secretKey).update(csrfSecret).digest('hex');
-  return sig === expectedSig;
+  const sigBuffer = Buffer.from(sig, 'hex');
+  const expectedSigBuffer = Buffer.from(expectedSig, 'hex');
+  if (sigBuffer.length !== expectedSigBuffer.length) return false;
+  return crypto.timingSafeEqual(sigBuffer, expectedSigBuffer);
 };
 
 const welcomes = [

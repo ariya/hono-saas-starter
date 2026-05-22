@@ -25,7 +25,7 @@
 
 ## Critical
 - [x] Fix timing attack vulnerability in session cookie HMAC verification by using `crypto.timingSafeEqual`.
-- [ ] Fix timing attack vulnerability in CSRF token HMAC verification by using `crypto.timingSafeEqual`.
+- [x] Fix timing attack vulnerability in CSRF token HMAC verification by using `crypto.timingSafeEqual`.
 
 ## High
 - [ ] Mitigate Denial of Service (DoS) and Event Loop blocking by replacing synchronous `crypto.scryptSync` with asynchronous promise-based `crypto.scrypt`.
