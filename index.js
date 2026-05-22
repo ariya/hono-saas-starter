@@ -10,8 +10,17 @@ const eta = new Eta({ views: path.join(__dirname, 'templates') });
 
 app.use(secureHeaders());
 
+const welcomes = [
+  'Welcome back!',
+  'Glad to see you again!',
+  'Hello! Please sign in',
+  'Welcome to Hono SaaS Starter!',
+  'Ready to get started? Log in'
+];
+
 app.get('/', (c) => {
-  return c.html(eta.render('./signin', {}));
+  const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
+  return c.html(eta.render('./signin', { welcome }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
