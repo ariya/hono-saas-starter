@@ -50,6 +50,12 @@ const scryptAsync = (password, salt, keylen) => {
   });
 };
 
+const validateEmail = (email) => {
+  if (!email || typeof email !== 'string' || email.length > 254) return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 const generateCsrf = (c) => {
   let csrfSecret = getCookie(c, '_csrf');
   if (!csrfSecret) {
@@ -110,6 +116,17 @@ app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
   const email = body.email;
   const password = body.password;
+  if (!validateEmail(email) || typeof password !== 'string' || password.length < 8 || password.length > 128) {
+    const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
+    const csrfToken = generateCsrf(c);
+    return c.html(
+      eta.render('./signin', {
+        welcome,
+        csrfToken,
+        error: 'Invalid email or password'
+      })
+    );
+  }
   const user = users.get(email);
   const salt = user ? user.salt : '0000000000000000';
   const expectedHash = user ? user.passwordHash : '0'.repeat(128);
@@ -153,9 +170,23 @@ app.post('/register', async (c) => {
   const body = await c.req.parseBody();
   const email = body.email;
   const password = body.password;
-  if (!email || !password || password.length < 8) {
+  if (!validateEmail(email)) {
     const csrfToken = generateCsrf(c);
-    return c.html(eta.render('./register', { csrfToken, error: 'Password must be at least 8 characters long' }));
+    return c.html(
+      eta.render('./register', {
+        csrfToken,
+        error: 'Invalid email address format'
+      })
+    );
+  }
+  if (!password || typeof password !== 'string' || password.length < 8 || password.length > 128) {
+    const csrfToken = generateCsrf(c);
+    return c.html(
+      eta.render('./register', {
+        csrfToken,
+        error: 'Password must be between 8 and 128 characters long'
+      })
+    );
   }
   if (users.has(email)) {
     const csrfToken = generateCsrf(c);

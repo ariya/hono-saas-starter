@@ -33,5 +33,5 @@
 
 ## Medium
 - [x] Add production safeguard warning or error if `HMAC_SECRET` environment variable is not configured.
-- [ ] Implement email format validation and length limits on registration and sign-in to prevent malformed or oversized inputs.
+- [x] Implement email format validation and length limits on registration and sign-in to prevent malformed or oversized inputs.
 
