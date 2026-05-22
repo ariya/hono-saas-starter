@@ -108,6 +108,16 @@ app.post('/signin', async (c) => {
   return c.redirect('/profile');
 });
 
+app.get('/register', (c) => {
+  const session = getCookie(c, 'session');
+  const email = verifySession(session);
+  if (email) {
+    return c.redirect('/profile');
+  }
+  const csrfToken = generateCsrf(c);
+  return c.html(eta.render('./register', { csrfToken }));
+});
+
 app.get('/profile', (c) => {
   const session = getCookie(c, 'session');
   const email = verifySession(session);

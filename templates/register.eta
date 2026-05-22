@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register</title>
+  <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css">
+</head>
+<body>
+  <main class="container">
+    <section>
+      <h2>Create an Account</h2>
+      <% if (it.error) { %>
+        <p style="color: var(--danger, #ff4d4d); background: #fee2e2; border: 1px solid #fca5a5; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;"><%= it.error %></p>
+      <% } %>
+      <% if (it.success) { %>
+        <p style="color: var(--success, #10b981); background: #d1fae5; border: 1px solid #6ee7b7; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;"><%= it.success %></p>
+      <% } %>
+      <form action="/register" method="POST">
+        <input type="hidden" name="_csrf" value="<%= it.csrfToken %>">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+        <button type="submit">Register</button>
+      </form>
+      <p style="margin-top: 1rem; text-align: center;">Already have an account? <a href="/">Sign In</a></p>
+    </section>
+  </main>
+</body>
+</html>
