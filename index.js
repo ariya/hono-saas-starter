@@ -44,7 +44,7 @@ app.post('/signin', async (c) => {
   setCookie(c, 'session', email, {
     path: '/',
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     maxAge: 25200
   });
   return c.redirect('/profile');
