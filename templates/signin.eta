@@ -21,6 +21,7 @@
         <input type="password" id="password" name="password" required>
         <button type="submit">Sign In</button>
       </form>
+      <p style="margin-top: 1rem; text-align: center;">Don't have an account? <a href="/register">Register for account</a></p>
     </section>
   </main>
 </body>
