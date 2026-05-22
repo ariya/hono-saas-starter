@@ -28,7 +28,7 @@
 - [x] Fix timing attack vulnerability in CSRF token HMAC verification by using `crypto.timingSafeEqual`.
 
 ## High
-- [ ] Mitigate Denial of Service (DoS) and Event Loop blocking by replacing synchronous `crypto.scryptSync` with asynchronous promise-based `crypto.scrypt`.
+- [x] Mitigate Denial of Service (DoS) and Event Loop blocking by replacing synchronous `crypto.scryptSync` with asynchronous promise-based `crypto.scrypt`.
 - [ ] Mitigate user enumeration timing attack on sign-in by always performing a dummy hash comparison when a user is not found.
 
 ## Medium

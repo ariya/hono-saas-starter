@@ -34,6 +34,15 @@ const verifySession = (cookieValue) => {
   return email;
 };
 
+const scryptAsync = (password, salt, keylen) => {
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, keylen, (err, derivedKey) => {
+      if (err) reject(err);
+      else resolve(derivedKey.toString('hex'));
+    });
+  });
+};
+
 const generateCsrf = (c) => {
   let csrfSecret = getCookie(c, '_csrf');
   if (!csrfSecret) {
@@ -100,7 +109,7 @@ app.post('/signin', async (c) => {
     const csrfToken = generateCsrf(c);
     return c.html(eta.render('./signin', { welcome, csrfToken, error: 'Invalid email or password' }));
   }
-  const hash = crypto.scryptSync(password, user.salt, 64).toString('hex');
+  const hash = await scryptAsync(password, user.salt, 64);
   if (hash !== user.passwordHash) {
     const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
     const csrfToken = generateCsrf(c);
@@ -142,7 +151,7 @@ app.post('/register', async (c) => {
     return c.html(eta.render('./register', { csrfToken, error: 'User already exists' }));
   }
   const salt = crypto.randomBytes(16).toString('hex');
-  const passwordHash = crypto.scryptSync(password, salt, 64).toString('hex');
+  const passwordHash = await scryptAsync(password, salt, 64);
   users.set(email, { email, passwordHash, salt });
   return c.redirect('/?success=Registration+successful.+Please+sign+in.');
 });
