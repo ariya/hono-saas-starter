@@ -14,9 +14,10 @@ app.use(secureHeaders());
 
 const users = new Map();
 
+const secretKey = process.env.HMAC_SECRET || crypto.randomBytes(32).toString('hex');
+
 const signSession = (email) => {
-  const secret = process.env.HMAC_SECRET || 'dev_secret_key';
-  const sig = crypto.createHmac('sha256', secret).update(email).digest('hex');
+  const sig = crypto.createHmac('sha256', secretKey).update(email).digest('hex');
   return `${email}:${sig}`;
 };
 
@@ -25,8 +26,7 @@ const verifySession = (cookieValue) => {
   const parts = cookieValue.split(':');
   if (parts.length !== 2) return null;
   const [email, sig] = parts;
-  const secret = process.env.HMAC_SECRET || 'dev_secret_key';
-  const expectedSig = crypto.createHmac('sha256', secret).update(email).digest('hex');
+  const expectedSig = crypto.createHmac('sha256', secretKey).update(email).digest('hex');
   if (sig !== expectedSig) return null;
   return email;
 };
