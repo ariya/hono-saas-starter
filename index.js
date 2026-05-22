@@ -68,6 +68,11 @@ const welcomes = [
 ];
 
 app.get('/', (c) => {
+  const session = getCookie(c, 'session');
+  const email = verifySession(session);
+  if (email) {
+    return c.redirect('/profile');
+  }
   const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
   const csrfToken = generateCsrf(c);
   return c.html(eta.render('./signin', { welcome, csrfToken }));
