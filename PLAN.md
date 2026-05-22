@@ -20,3 +20,18 @@
 - [x] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [x] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
 - [x] Implement the /signout handler to clear session cookies and redirect to the landing page.
+
+# Security Audit Findings
+
+## Critical
+- [ ] Fix timing attack vulnerability in session cookie HMAC verification by using `crypto.timingSafeEqual`.
+- [ ] Fix timing attack vulnerability in CSRF token HMAC verification by using `crypto.timingSafeEqual`.
+
+## High
+- [ ] Mitigate Denial of Service (DoS) and Event Loop blocking by replacing synchronous `crypto.scryptSync` with asynchronous promise-based `crypto.scrypt`.
+- [ ] Mitigate user enumeration timing attack on sign-in by always performing a dummy hash comparison when a user is not found.
+
+## Medium
+- [ ] Add production safeguard warning or error if `HMAC_SECRET` environment variable is not configured.
+- [ ] Implement email format validation and length limits on registration and sign-in to prevent malformed or oversized inputs.
+
