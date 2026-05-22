@@ -13,6 +13,12 @@
         <li><strong><%= it.email %></strong></li>
       </ul>
       <ul>
+        <li>
+          <form action="/signout" method="POST" style="margin: 0;">
+            <input type="hidden" name="_csrf" value="<%= it.csrfToken %>">
+            <button type="submit" style="margin: 0; padding: 0.25rem 0.75rem;">Sign Out</button>
+          </form>
+        </li>
       </ul>
     </nav>
   </header>

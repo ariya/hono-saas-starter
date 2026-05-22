@@ -147,7 +147,8 @@ app.get('/profile', (c) => {
   if (!email) {
     return c.redirect('/');
   }
-  return c.html(eta.render('./profile', { email }));
+  const csrfToken = generateCsrf(c);
+  return c.html(eta.render('./profile', { email, csrfToken }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
