@@ -151,6 +151,19 @@ app.get('/profile', (c) => {
   return c.html(eta.render('./profile', { email, csrfToken }));
 });
 
+app.post('/signout', async (c) => {
+  if (!(await verifyCsrf(c))) {
+    return c.redirect('/profile');
+  }
+  setCookie(c, 'session', '', {
+    path: '/',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 0
+  });
+  return c.redirect('/?success=You+have+been+signed+out.');
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
