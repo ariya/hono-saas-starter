@@ -27,7 +27,10 @@ const verifySession = (cookieValue) => {
   if (parts.length !== 2) return null;
   const [email, sig] = parts;
   const expectedSig = crypto.createHmac('sha256', secretKey).update(email).digest('hex');
-  if (sig !== expectedSig) return null;
+  const sigBuffer = Buffer.from(sig, 'hex');
+  const expectedSigBuffer = Buffer.from(expectedSig, 'hex');
+  if (sigBuffer.length !== expectedSigBuffer.length) return null;
+  if (!crypto.timingSafeEqual(sigBuffer, expectedSigBuffer)) return null;
   return email;
 };
 

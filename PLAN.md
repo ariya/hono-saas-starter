@@ -24,7 +24,7 @@
 # Security Audit Findings
 
 ## Critical
-- [ ] Fix timing attack vulnerability in session cookie HMAC verification by using `crypto.timingSafeEqual`.
+- [x] Fix timing attack vulnerability in session cookie HMAC verification by using `crypto.timingSafeEqual`.
 - [ ] Fix timing attack vulnerability in CSRF token HMAC verification by using `crypto.timingSafeEqual`.
 
 ## High
