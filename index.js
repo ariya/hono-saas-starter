@@ -14,6 +14,23 @@ app.use(secureHeaders());
 
 const users = new Map();
 
+const signSession = (email) => {
+  const secret = process.env.HMAC_SECRET || 'dev_secret_key';
+  const sig = crypto.createHmac('sha256', secret).update(email).digest('hex');
+  return `${email}:${sig}`;
+};
+
+const verifySession = (cookieValue) => {
+  if (!cookieValue) return null;
+  const parts = cookieValue.split(':');
+  if (parts.length !== 2) return null;
+  const [email, sig] = parts;
+  const secret = process.env.HMAC_SECRET || 'dev_secret_key';
+  const expectedSig = crypto.createHmac('sha256', secret).update(email).digest('hex');
+  if (sig !== expectedSig) return null;
+  return email;
+};
+
 const welcomes = [
   'Welcome back!',
   'Glad to see you again!',
@@ -41,7 +58,7 @@ app.post('/signin', async (c) => {
     const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
     return c.html(eta.render('./signin', { welcome, error: 'Invalid email or password' }));
   }
-  setCookie(c, 'session', email, {
+  setCookie(c, 'session', signSession(email), {
     path: '/',
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
