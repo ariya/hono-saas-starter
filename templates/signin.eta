@@ -14,6 +14,7 @@
         <p style="color: var(--danger, #ff4d4d); background: #fee2e2; border: 1px solid #fca5a5; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;"><%= it.error %></p>
       <% } %>
       <form action="/signin" method="POST">
+        <input type="hidden" name="_csrf" value="<%= it.csrfToken %>">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required>
         <label for="password">Password</label>

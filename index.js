@@ -31,6 +31,34 @@ const verifySession = (cookieValue) => {
   return email;
 };
 
+const generateCsrf = (c) => {
+  let csrfSecret = getCookie(c, '_csrf');
+  if (!csrfSecret) {
+    csrfSecret = crypto.randomBytes(16).toString('hex');
+    setCookie(c, '_csrf', csrfSecret, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax'
+    });
+  }
+  const sig = crypto.createHmac('sha256', secretKey).update(csrfSecret).digest('hex');
+  return `${csrfSecret}:${sig}`;
+};
+
+const verifyCsrf = async (c) => {
+  const body = await c.req.parseBody();
+  const token = body._csrf;
+  if (!token) return false;
+  const parts = token.split(':');
+  if (parts.length !== 2) return false;
+  const [csrfSecret, sig] = parts;
+  const cookieSecret = getCookie(c, '_csrf');
+  if (!cookieSecret || cookieSecret !== csrfSecret) return false;
+  const expectedSig = crypto.createHmac('sha256', secretKey).update(csrfSecret).digest('hex');
+  return sig === expectedSig;
+};
+
 const welcomes = [
   'Welcome back!',
   'Glad to see you again!',
@@ -41,22 +69,30 @@ const welcomes = [
 
 app.get('/', (c) => {
   const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
-  return c.html(eta.render('./signin', { welcome }));
+  const csrfToken = generateCsrf(c);
+  return c.html(eta.render('./signin', { welcome, csrfToken }));
 });
 
 app.post('/signin', async (c) => {
+  if (!(await verifyCsrf(c))) {
+    const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
+    const csrfToken = generateCsrf(c);
+    return c.html(eta.render('./signin', { welcome, csrfToken, error: 'Invalid or missing CSRF token' }));
+  }
   const body = await c.req.parseBody();
   const email = body.email;
   const password = body.password;
   const user = users.get(email);
   if (!user) {
     const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
-    return c.html(eta.render('./signin', { welcome, error: 'Invalid email or password' }));
+    const csrfToken = generateCsrf(c);
+    return c.html(eta.render('./signin', { welcome, csrfToken, error: 'Invalid email or password' }));
   }
   const hash = crypto.scryptSync(password, user.salt, 64).toString('hex');
   if (hash !== user.passwordHash) {
     const welcome = welcomes[Math.floor(Math.random() * welcomes.length)];
-    return c.html(eta.render('./signin', { welcome, error: 'Invalid email or password' }));
+    const csrfToken = generateCsrf(c);
+    return c.html(eta.render('./signin', { welcome, csrfToken, error: 'Invalid email or password' }));
   }
   setCookie(c, 'session', signSession(email), {
     path: '/',
