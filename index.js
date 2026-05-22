@@ -10,6 +10,8 @@ const eta = new Eta({ views: path.join(__dirname, 'templates') });
 
 app.use(secureHeaders());
 
+const users = new Map();
+
 const welcomes = [
   'Welcome back!',
   'Glad to see you again!',
