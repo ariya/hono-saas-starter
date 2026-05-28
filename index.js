@@ -31,6 +31,17 @@ function rateLimit(windowMs, maxRequests) {
 
 app.use(secureHeaders());
 
+app.use(async (c, next) => {
+  if (isSecure) {
+    const proto = c.req.header('x-forwarded-proto') || '';
+    if (proto === 'http') {
+      const host = c.req.header('host') || '';
+      return c.redirect(`https://${host.replace(/:\d+$/, '')}${c.req.url}`, 301);
+    }
+  }
+  await next();
+});
+
 function makeHash(password, salt) {
   salt = salt || crypto.randomBytes(16).toString('hex');
   const hash = crypto.scryptSync(password, salt, 64).toString('hex');
