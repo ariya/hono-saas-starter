@@ -153,10 +153,15 @@ app.post('/register', rateLimit(60000, 10), async (c) => {
     setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
     return c.html(eta.render('register', { csrf, error: 'Valid email is required' }));
   }
-  if (password.length < 8) {
+  if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
     const csrf = generateCsrf();
     setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
-    return c.html(eta.render('register', { csrf, error: 'Password must be at least 8 characters' }));
+    return c.html(
+      eta.render('register', {
+        csrf,
+        error: 'Password must be at least 8 characters with uppercase, lowercase, and a number'
+      })
+    );
   }
   if (users.find((u) => u.email === email)) {
     const csrf = generateCsrf();
