@@ -9,6 +9,7 @@ const app = new Hono();
 const eta = new Eta({ views: __dirname });
 const users = [];
 const isSecure = process.env.NODE_ENV === 'production';
+const HMAC_SECRET = process.env.HMAC_SECRET || 'dev-secret-change-in-production';
 
 app.use(secureHeaders());
 
@@ -18,9 +19,35 @@ function makeHash(password, salt) {
   return { salt, hash };
 }
 
+function hmac(data) {
+  return crypto.createHmac('sha256', HMAC_SECRET).update(data).digest('hex');
+}
+
 function safeEqual(a, b) {
   if (Buffer.byteLength(a) !== Buffer.byteLength(b)) return false;
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+
+function signSession(email) {
+  const payload = Buffer.from(email).toString('base64');
+  return `${payload}.${hmac(email)}`;
+}
+
+function verifySession(cookie) {
+  if (!cookie) return null;
+  const dot = cookie.indexOf('.');
+  if (dot === -1) return null;
+  const payload = cookie.slice(0, dot);
+  const sig = cookie.slice(dot + 1);
+  if (!payload || !sig) return null;
+  let email;
+  try {
+    email = Buffer.from(payload, 'base64').toString('utf-8');
+  } catch {
+    return null;
+  }
+  if (!safeEqual(sig, hmac(email))) return null;
+  return email;
 }
 
 const welcomeMessages = ['Welcome', 'Hello again', 'Good to see you', 'Welcome back', 'Hey there'];
@@ -44,8 +71,8 @@ app.post('/signin', async (c) => {
     const welcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
     return c.html(eta.render('signin', { welcome, error: 'Invalid email or password' }));
   }
-  const payload = Buffer.from(email).toString('base64');
-  setCookie(c, 'session', payload, { httpOnly: true, sameSite: 'Strict', secure: isSecure, maxAge: 25200, path: '/' });
+  const session = signSession(email);
+  setCookie(c, 'session', session, { httpOnly: true, sameSite: 'Strict', secure: isSecure, maxAge: 25200, path: '/' });
   return c.redirect('/profile');
 });
 
