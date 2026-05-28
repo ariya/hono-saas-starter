@@ -26,7 +26,7 @@
 ### Critical
 - [*] Fix CSRF bypass: `safeEqual(body._csrf || '', cookie ...)` passes when both values are empty/undefined; attacker can submit POST without any CSRF token.
 - [*] Replace hardcoded fallback HMAC secret (`'dev-secret-change-in-production'`) with a cryptographically random fallback generated at startup.
-- [ ] Add rate limiting to authentication endpoints (POST /signin, POST /register) to prevent brute-force and enumeration attacks.
+- [*] Add rate limiting to authentication endpoints (POST /signin, POST /register) to prevent brute-force and enumeration attacks.
 - [ ] Enforce TLS/HTTPS in production via HTTP→HTTPS redirect or reject non-TLS connections.
 
 ### High

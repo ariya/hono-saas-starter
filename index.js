@@ -10,6 +10,24 @@ const eta = new Eta({ views: __dirname });
 const users = [];
 const isSecure = process.env.NODE_ENV === 'production';
 const HMAC_SECRET = process.env.HMAC_SECRET || crypto.randomBytes(32).toString('hex');
+const rateLimitStore = new Map();
+
+function rateLimit(windowMs, maxRequests) {
+  return async (c, next) => {
+    const ip = c.req.header('x-forwarded-for') || c.req.raw.connection.remoteAddress || 'unknown';
+    const now = Date.now();
+    if (!rateLimitStore.has(ip)) {
+      rateLimitStore.set(ip, []);
+    }
+    const timestamps = rateLimitStore.get(ip).filter((t) => now - t < windowMs);
+    if (timestamps.length >= maxRequests) {
+      return c.text('Too many requests', 429);
+    }
+    timestamps.push(now);
+    rateLimitStore.set(ip, timestamps);
+    await next();
+  };
+}
 
 app.use(secureHeaders());
 
@@ -76,7 +94,7 @@ app.get('/profile', (c) => {
   return c.html(eta.render('profile', { email, csrf }));
 });
 
-app.post('/signin', async (c) => {
+app.post('/signin', rateLimit(60000, 10), async (c) => {
   const body = await c.req.parseBody();
   const csrfToken = body._csrf;
   const csrfCookie = getCookie(c, 'csrf');
@@ -110,7 +128,7 @@ app.get('/register', (c) => {
   return c.html(eta.render('register', { csrf }));
 });
 
-app.post('/register', async (c) => {
+app.post('/register', rateLimit(60000, 10), async (c) => {
   const body = await c.req.parseBody();
   const csrfToken = body._csrf;
   const csrfCookie = getCookie(c, 'csrf');
