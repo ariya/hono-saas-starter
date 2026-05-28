@@ -8,6 +8,7 @@ const { getCookie, setCookie } = require('hono/cookie');
 const app = new Hono();
 const eta = new Eta({ views: __dirname });
 const users = [];
+const isSecure = process.env.NODE_ENV === 'production';
 
 app.use(secureHeaders());
 
@@ -44,7 +45,7 @@ app.post('/signin', async (c) => {
     return c.html(eta.render('signin', { welcome, error: 'Invalid email or password' }));
   }
   const payload = Buffer.from(email).toString('base64');
-  setCookie(c, 'session', payload, { httpOnly: true, sameSite: 'Strict', secure: true, maxAge: 25200, path: '/' });
+  setCookie(c, 'session', payload, { httpOnly: true, sameSite: 'Strict', secure: isSecure, maxAge: 25200, path: '/' });
   return c.redirect('/profile');
 });
 
