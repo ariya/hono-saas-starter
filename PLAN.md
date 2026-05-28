@@ -30,8 +30,8 @@
 - [*] Enforce TLS/HTTPS in production via HTTP→HTTPS redirect or reject non-TLS connections.
 
 ### High
-- [ ] Prevent email enumeration on POST /register: return a generic message instead of "Email already registered".
-- [ ] Validate email format on server-side registration (basic regex check).
+- [*] Prevent email enumeration on POST /register: return a generic message instead of "Email already registered".
+- [*] Validate email format on server-side registration (basic regex check).
 
 ### Medium
 - [ ] Add password complexity requirements beyond minimum length (mixed case, numbers, special characters).

@@ -148,6 +148,11 @@ app.post('/register', rateLimit(60000, 10), async (c) => {
   }
   const email = body.email;
   const password = body.password;
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const csrf = generateCsrf();
+    setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
+    return c.html(eta.render('register', { csrf, error: 'Valid email is required' }));
+  }
   if (password.length < 8) {
     const csrf = generateCsrf();
     setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
@@ -156,7 +161,7 @@ app.post('/register', rateLimit(60000, 10), async (c) => {
   if (users.find((u) => u.email === email)) {
     const csrf = generateCsrf();
     setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
-    return c.html(eta.render('register', { csrf, error: 'Email already registered' }));
+    return c.html(eta.render('register', { csrf, error: 'Registration could not be completed' }));
   }
   const { salt, hash } = makeHash(password);
   users.push({ email, salt, hash });
