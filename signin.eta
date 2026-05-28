@@ -9,6 +9,9 @@
 <body>
 <main class="container">
   <h1><%= it.welcome %></h1>
+  <% if (it.error) { %>
+    <p><%= it.error %></p>
+  <% } %>
   <form action="/signin" method="POST">
     <label>Email <input type="email" name="email" required></label>
     <label>Password <input type="password" name="password" required></label>
