@@ -6,7 +6,23 @@ const app = new Hono();
 
 app.use(secureHeaders());
 
-app.get('/', (c) => c.text('Hello from Hono!'));
+app.get('/', (c) =>
+  c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sign In</title>
+</head>
+<body>
+  <h1>Welcome</h1>
+  <form action="/signin" method="POST">
+    <label>Email <input type="email" name="email" required></label>
+    <label>Password <input type="password" name="password" required></label>
+    <button type="submit">Sign In</button>
+  </form>
+</body>
+</html>`)
+);
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
