@@ -132,6 +132,15 @@ app.post('/register', async (c) => {
   return c.html(eta.render('register', { csrf, success: 'Account created! Redirecting to sign in...' }));
 });
 
+app.post('/signout', async (c) => {
+  const body = await c.req.parseBody();
+  if (!safeEqual(body._csrf || '', getCookie(c, 'csrf') || '')) {
+    return c.redirect('/');
+  }
+  setCookie(c, 'session', '', { httpOnly: true, sameSite: 'Strict', secure: isSecure, maxAge: 0, path: '/' });
+  return c.redirect('/');
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
