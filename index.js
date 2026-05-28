@@ -58,6 +58,9 @@ function generateCsrf() {
 const welcomeMessages = ['Welcome', 'Hello again', 'Good to see you', 'Welcome back', 'Hey there'];
 
 app.get('/', (c) => {
+  const session = getCookie(c, 'session');
+  const email = verifySession(session);
+  if (email) return c.redirect('/profile');
   const csrf = generateCsrf();
   setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
   const welcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
