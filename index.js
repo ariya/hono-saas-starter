@@ -64,6 +64,15 @@ app.get('/', (c) => {
   return c.html(eta.render('signin', { welcome, csrf }));
 });
 
+app.get('/profile', (c) => {
+  const session = getCookie(c, 'session');
+  const email = verifySession(session);
+  if (!email) return c.redirect('/');
+  const csrf = generateCsrf();
+  setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
+  return c.html(eta.render('profile', { email, csrf }));
+});
+
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
   if (!safeEqual(body._csrf || '', getCookie(c, 'csrf') || '')) {
