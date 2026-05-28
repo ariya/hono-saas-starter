@@ -78,7 +78,9 @@ app.get('/profile', (c) => {
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
-  if (!safeEqual(body._csrf || '', getCookie(c, 'csrf') || '')) {
+  const csrfToken = body._csrf;
+  const csrfCookie = getCookie(c, 'csrf');
+  if (!csrfToken || !csrfCookie || !safeEqual(csrfToken, csrfCookie)) {
     return c.text('Invalid CSRF token', 403);
   }
   const email = body.email;
@@ -110,7 +112,9 @@ app.get('/register', (c) => {
 
 app.post('/register', async (c) => {
   const body = await c.req.parseBody();
-  if (!safeEqual(body._csrf || '', getCookie(c, 'csrf') || '')) {
+  const csrfToken = body._csrf;
+  const csrfCookie = getCookie(c, 'csrf');
+  if (!csrfToken || !csrfCookie || !safeEqual(csrfToken, csrfCookie)) {
     return c.text('Invalid CSRF token', 403);
   }
   const email = body.email;
@@ -134,7 +138,9 @@ app.post('/register', async (c) => {
 
 app.post('/signout', async (c) => {
   const body = await c.req.parseBody();
-  if (!safeEqual(body._csrf || '', getCookie(c, 'csrf') || '')) {
+  const csrfToken = body._csrf;
+  const csrfCookie = getCookie(c, 'csrf');
+  if (!csrfToken || !csrfCookie || !safeEqual(csrfToken, csrfCookie)) {
     return c.redirect('/');
   }
   setCookie(c, 'session', '', { httpOnly: true, sameSite: 'Strict', secure: isSecure, maxAge: 0, path: '/' });
