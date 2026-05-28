@@ -2,9 +2,11 @@ const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
+const crypto = require('crypto');
 
 const app = new Hono();
 const eta = new Eta({ views: __dirname });
+const users = [];
 
 app.use(secureHeaders());
 
