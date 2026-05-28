@@ -7,8 +7,14 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/oat.ink@latest/css/oat.css">
 </head>
 <body>
-<nav>
+<nav style="display:flex;justify-content:space-between;align-items:center">
   <div><%= it.email %></div>
+  <div>
+    <form action="/signout" method="POST" style="display:inline">
+      <input type="hidden" name="_csrf" value="<%= it.csrf %>">
+      <button type="submit">Sign Out</button>
+    </form>
+  </div>
 </nav>
 <main class="container">
   <h1>Welcome, <%= it.email %></h1>
