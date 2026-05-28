@@ -44,7 +44,7 @@ app.post('/signin', async (c) => {
     return c.html(eta.render('signin', { welcome, error: 'Invalid email or password' }));
   }
   const payload = Buffer.from(email).toString('base64');
-  setCookie(c, 'session', payload, { httpOnly: true, sameSite: 'Strict', path: '/' });
+  setCookie(c, 'session', payload, { httpOnly: true, sameSite: 'Strict', secure: true, maxAge: 25200, path: '/' });
   return c.redirect('/profile');
 });
 
