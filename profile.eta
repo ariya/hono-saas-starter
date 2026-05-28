@@ -7,6 +7,9 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/oat.ink@latest/css/oat.css">
 </head>
 <body>
+<nav>
+  <div><%= it.email %></div>
+</nav>
 <main class="container">
   <h1>Welcome, <%= it.email %></h1>
 </main>
