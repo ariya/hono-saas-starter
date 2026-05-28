@@ -13,6 +13,7 @@
     <p><%= it.error %></p>
   <% } %>
   <form action="/signin" method="POST">
+    <input type="hidden" name="_csrf" value="<%= it.csrf %>">
     <label>Email <input type="email" name="email" required></label>
     <label>Password <input type="password" name="password" required></label>
     <button type="submit">Sign In</button>

@@ -50,26 +50,40 @@ function verifySession(cookie) {
   return email;
 }
 
+function generateCsrf() {
+  const raw = crypto.randomBytes(32).toString('hex');
+  return `${raw}.${hmac(raw)}`;
+}
+
 const welcomeMessages = ['Welcome', 'Hello again', 'Good to see you', 'Welcome back', 'Hey there'];
 
 app.get('/', (c) => {
+  const csrf = generateCsrf();
+  setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
   const welcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
-  return c.html(eta.render('signin', { welcome }));
+  return c.html(eta.render('signin', { welcome, csrf }));
 });
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
+  if (!safeEqual(body._csrf || '', getCookie(c, 'csrf') || '')) {
+    return c.text('Invalid CSRF token', 403);
+  }
   const email = body.email;
   const password = body.password;
   const user = users.find((u) => u.email === email);
   if (!user) {
+    const csrf = generateCsrf();
+    setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
     const welcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
-    return c.html(eta.render('signin', { welcome, error: 'Invalid email or password' }));
+    return c.html(eta.render('signin', { welcome, error: 'Invalid email or password', csrf }));
   }
   const { hash } = makeHash(password, user.salt);
   if (!safeEqual(hash, user.hash)) {
+    const csrf = generateCsrf();
+    setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
     const welcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
-    return c.html(eta.render('signin', { welcome, error: 'Invalid email or password' }));
+    return c.html(eta.render('signin', { welcome, error: 'Invalid email or password', csrf }));
   }
   const session = signSession(email);
   setCookie(c, 'session', session, { httpOnly: true, sameSite: 'Strict', secure: isSecure, maxAge: 25200, path: '/' });
