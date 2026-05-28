@@ -3,6 +3,7 @@ const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
 const crypto = require('crypto');
+const { getCookie, setCookie } = require('hono/cookie');
 
 const app = new Hono();
 const eta = new Eta({ views: __dirname });
@@ -42,7 +43,9 @@ app.post('/signin', async (c) => {
     const welcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
     return c.html(eta.render('signin', { welcome, error: 'Invalid email or password' }));
   }
-  return c.text('Authenticated');
+  const payload = Buffer.from(email).toString('base64');
+  setCookie(c, 'session', payload, { httpOnly: true, sameSite: 'Strict', path: '/' });
+  return c.redirect('/profile');
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
