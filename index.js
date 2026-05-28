@@ -102,6 +102,26 @@ app.post('/signin', async (c) => {
   return c.redirect('/profile');
 });
 
+app.get('/register', (c) => {
+  const csrf = generateCsrf();
+  setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
+  return c.html(eta.render('register', { csrf }));
+});
+
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  if (!safeEqual(body._csrf || '', getCookie(c, 'csrf') || '')) {
+    return c.text('Invalid CSRF token', 403);
+  }
+  const email = body.email;
+  const password = body.password;
+  const { salt, hash } = makeHash(password);
+  users.push({ email, salt, hash });
+  const csrf = generateCsrf();
+  setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
+  return c.html(eta.render('register', { csrf, success: 'Account created! Redirecting to sign in...' }));
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
