@@ -115,6 +115,16 @@ app.post('/register', async (c) => {
   }
   const email = body.email;
   const password = body.password;
+  if (password.length < 8) {
+    const csrf = generateCsrf();
+    setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
+    return c.html(eta.render('register', { csrf, error: 'Password must be at least 8 characters' }));
+  }
+  if (users.find((u) => u.email === email)) {
+    const csrf = generateCsrf();
+    setCookie(c, 'csrf', csrf, { httpOnly: true, sameSite: 'Strict', secure: isSecure, path: '/' });
+    return c.html(eta.render('register', { csrf, error: 'Email already registered' }));
+  }
   const { salt, hash } = makeHash(password);
   users.push({ email, salt, hash });
   const csrf = generateCsrf();
