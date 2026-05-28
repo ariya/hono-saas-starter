@@ -9,7 +9,7 @@ const app = new Hono();
 const eta = new Eta({ views: __dirname });
 const users = [];
 const isSecure = process.env.NODE_ENV === 'production';
-const HMAC_SECRET = process.env.HMAC_SECRET || 'dev-secret-change-in-production';
+const HMAC_SECRET = process.env.HMAC_SECRET || crypto.randomBytes(32).toString('hex');
 
 app.use(secureHeaders());
 
