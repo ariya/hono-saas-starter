@@ -8,7 +8,12 @@ const eta = new Eta({ views: __dirname });
 
 app.use(secureHeaders());
 
-app.get('/', (c) => c.html(eta.render('signin', { welcome: 'Welcome' })));
+const welcomeMessages = ['Welcome', 'Hello again', 'Good to see you', 'Welcome back', 'Hey there'];
+
+app.get('/', (c) => {
+  const welcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+  return c.html(eta.render('signin', { welcome }));
+});
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
