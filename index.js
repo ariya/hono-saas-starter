@@ -1,4 +1,6 @@
 const path = require('path');
+const crypto = require('crypto');
+const { promisify } = require('util');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
@@ -28,7 +30,41 @@ const createUser = (email, passwordHash, salt) => {
 
 const findUser = (email) => users.get(email);
 
-const verifyPassword = (user, password) => Boolean(user) && user.passwordHash === password;
+const scrypt = promisify(crypto.scrypt);
+const SCRYPT_KEYLEN = 64;
+
+const hashPassword = async (password, salt) => {
+  const useSalt = salt || crypto.randomBytes(16).toString('hex');
+  const derived = (await scrypt(password, useSalt, SCRYPT_KEYLEN)).toString('hex');
+  return { salt: useSalt, passwordHash: derived };
+};
+
+const verifyPassword = async (user, password) => {
+  if (!user) return false;
+  const { passwordHash } = await hashPassword(password, user.salt);
+  const a = Buffer.from(passwordHash, 'hex');
+  const b = Buffer.from(user.passwordHash, 'hex');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
+
+const SESSION_SECRET = process.env.HMAC_SECRET || 'insecure-dev-secret';
+
+const sign = (value) => crypto.createHmac('sha256', SESSION_SECRET).update(value).digest('hex');
+
+const createSession = (email) => `${email}.${sign(email)}`;
+
+const readSession = (token) => {
+  if (!token) return null;
+  const idx = token.lastIndexOf('.');
+  if (idx < 0) return null;
+  const email = token.slice(0, idx);
+  const signature = token.slice(idx + 1);
+  const expected = sign(email);
+  const a = Buffer.from(signature);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  return email;
+};
 
 const app = new Hono();
 
@@ -45,10 +81,10 @@ app.post('/', async (c) => {
   const email = typeof body.email === 'string' ? body.email : '';
   const password = typeof body.password === 'string' ? body.password : '';
   const user = findUser(email);
-  if (!verifyPassword(user, password)) {
+  if (!(await verifyPassword(user, password))) {
     return c.html(eta.render('signin', { title: pickWelcome(), error: 'Invalid email or password.' }), 401);
   }
-  setCookie(c, SESSION_COOKIE, user.email, sessionCookieOptions());
+  setCookie(c, SESSION_COOKIE, createSession(user.email), sessionCookieOptions());
   return c.redirect('/profile');
 });
 
