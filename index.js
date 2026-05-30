@@ -97,7 +97,10 @@ const pickWelcome = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles
 
 const renderSignin = (extra = {}) => eta.render('signin', { title: pickWelcome(), csrf: createCsrfToken(), ...extra });
 
-app.get('/', (c) => c.html(renderSignin()));
+app.get('/', (c) => {
+  if (currentUserEmail(c)) return c.redirect('/profile');
+  return c.html(renderSignin());
+});
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
