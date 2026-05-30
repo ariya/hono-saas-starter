@@ -4,6 +4,7 @@ const { promisify } = require('util');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
+const { bodyLimit } = require('hono/body-limit');
 const { getCookie, setCookie, deleteCookie } = require('hono/cookie');
 const { getConnInfo } = require('@hono/node-server/conninfo');
 const { Eta } = require('eta');
@@ -155,6 +156,8 @@ app.use(
     }
   })
 );
+
+app.use(bodyLimit({ maxSize: 16 * 1024 }));
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello again', 'Good to see you', 'Glad you are here'];
 
