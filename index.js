@@ -156,7 +156,7 @@ app.post('/register', async (c) => {
 app.get('/profile', (c) => {
   const email = currentUserEmail(c);
   if (!email) return c.redirect('/');
-  return c.html(eta.render('profile', { email }));
+  return c.html(eta.render('profile', { email, csrf: createCsrfToken() }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));

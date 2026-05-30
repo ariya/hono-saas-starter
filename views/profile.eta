@@ -10,6 +10,10 @@
     <header>
       <nav>
         <span><%= it.email %></span>
+        <form method="post" action="/signout">
+          <input type="hidden" name="_csrf" value="<%= it.csrf %>" />
+          <button type="submit">Sign Out</button>
+        </form>
       </nav>
     </header>
     <main>
