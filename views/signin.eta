@@ -9,6 +9,9 @@
   <body>
     <main>
       <h1><%= it.title %></h1>
+      <% if (it.error) { %>
+      <p role="alert"><%= it.error %></p>
+      <% } %>
       <form method="post" action="/">
         <label>
           Email

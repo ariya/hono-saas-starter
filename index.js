@@ -32,7 +32,7 @@ app.post('/', async (c) => {
   const password = typeof body.password === 'string' ? body.password : '';
   const user = findUser(email);
   if (!verifyPassword(user, password)) {
-    return c.text('Invalid email or password', 401);
+    return c.html(eta.render('signin', { title: pickWelcome(), error: 'Invalid email or password.' }), 401);
   }
   return c.text('Signed in');
 });
