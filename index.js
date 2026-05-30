@@ -137,11 +137,20 @@ app.post('/register', async (c) => {
   if (!verifyCsrfToken(typeof body._csrf === 'string' ? body._csrf : '')) {
     return c.html(renderRegister({ error: 'Invalid request. Please try again.' }), 403);
   }
+  const email = typeof body.email === 'string' ? body.email.trim() : '';
   const password = typeof body.password === 'string' ? body.password : '';
+  if (!email) {
+    return c.html(renderRegister({ error: 'Email is required.' }), 400);
+  }
   if (password.length < MIN_PASSWORD_LENGTH) {
     return c.html(renderRegister({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` }), 400);
   }
-  return c.text('Registered');
+  if (findUser(email)) {
+    return c.html(renderRegister({ error: 'An account with that email already exists.' }), 409);
+  }
+  const { passwordHash, salt } = await hashPassword(password);
+  createUser(email, passwordHash, salt);
+  return c.html(eta.render('success', { message: 'Your account is ready. You can now sign in.' }));
 });
 
 app.get('/profile', (c) => {
