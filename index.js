@@ -47,7 +47,11 @@ const verifyPassword = async (user, password) => {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
-const SESSION_SECRET = process.env.HMAC_SECRET || 'insecure-dev-secret';
+const SESSION_SECRET = process.env.HMAC_SECRET || (isProduction ? null : 'insecure-dev-secret');
+
+if (!SESSION_SECRET) {
+  throw new Error('HMAC_SECRET environment variable is required');
+}
 
 const sign = (value) => crypto.createHmac('sha256', SESSION_SECRET).update(value).digest('hex');
 
