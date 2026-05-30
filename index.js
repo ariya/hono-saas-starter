@@ -125,9 +125,23 @@ const currentUserEmail = (c) => {
 
 const renderRegister = (extra = {}) => eta.render('register', { csrf: createCsrfToken(), ...extra });
 
+const MIN_PASSWORD_LENGTH = 8;
+
 app.get('/register', (c) => {
   if (currentUserEmail(c)) return c.redirect('/profile');
   return c.html(renderRegister());
+});
+
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(typeof body._csrf === 'string' ? body._csrf : '')) {
+    return c.html(renderRegister({ error: 'Invalid request. Please try again.' }), 403);
+  }
+  const password = typeof body.password === 'string' ? body.password : '';
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return c.html(renderRegister({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` }), 400);
+  }
+  return c.text('Registered');
 });
 
 app.get('/profile', (c) => {
