@@ -70,6 +70,23 @@ const readSession = (token) => {
   return email;
 };
 
+const createCsrfToken = () => {
+  const nonce = crypto.randomBytes(16).toString('hex');
+  return `${nonce}.${sign('csrf:' + nonce)}`;
+};
+
+const verifyCsrfToken = (token) => {
+  if (!token) return false;
+  const idx = token.lastIndexOf('.');
+  if (idx < 0) return false;
+  const nonce = token.slice(0, idx);
+  const signature = token.slice(idx + 1);
+  const expected = sign('csrf:' + nonce);
+  const a = Buffer.from(signature);
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
+
 const app = new Hono();
 
 app.use(secureHeaders());
@@ -78,15 +95,20 @@ const welcomeTitles = ['Welcome', 'Welcome back', 'Hello again', 'Good to see yo
 
 const pickWelcome = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
-app.get('/', (c) => c.html(eta.render('signin', { title: pickWelcome() })));
+const renderSignin = (extra = {}) => eta.render('signin', { title: pickWelcome(), csrf: createCsrfToken(), ...extra });
+
+app.get('/', (c) => c.html(renderSignin()));
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
+  if (!verifyCsrfToken(typeof body._csrf === 'string' ? body._csrf : '')) {
+    return c.html(renderSignin({ error: 'Invalid request. Please try again.' }), 403);
+  }
   const email = typeof body.email === 'string' ? body.email : '';
   const password = typeof body.password === 'string' ? body.password : '';
   const user = findUser(email);
   if (!(await verifyPassword(user, password))) {
-    return c.html(eta.render('signin', { title: pickWelcome(), error: 'Invalid email or password.' }), 401);
+    return c.html(renderSignin({ error: 'Invalid email or password.' }), 401);
   }
   setCookie(c, SESSION_COOKIE, createSession(user.email), sessionCookieOptions());
   return c.redirect('/profile');
