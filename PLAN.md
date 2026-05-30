@@ -37,7 +37,7 @@
 
 - [x] No rate limiting or account lockout on `/` (sign-in) and `/register`, allowing credential brute-force and registration abuse.
 - [x] CSRF tokens are not bound to a session: any server-issued token is accepted on any request, so a token harvested from the public sign-in page enables login CSRF. (SameSite=Lax partially mitigates.) Bind the token to the session or use a pre-session double-submit cookie.
-- [ ] Email addresses are not normalized (case/whitespace) or format-validated, permitting duplicate and confusable accounts.
+- [x] Email addresses are not normalized (case/whitespace) or format-validated, permitting duplicate and confusable accounts.
 - [ ] No request body size limit on `parseBody`, allowing memory-exhaustion via oversized form submissions.
 
 ### Low

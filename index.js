@@ -34,6 +34,10 @@ const createUser = (email, passwordHash, salt) => {
 
 const findUser = (email) => users.get(email);
 
+const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
 const scrypt = promisify(crypto.scrypt);
 const SCRYPT_KEYLEN = 64;
 
@@ -171,7 +175,7 @@ app.post('/', async (c) => {
   if (!verifyCsrf(c, typeof body._csrf === 'string' ? body._csrf : '')) {
     return c.html(renderSignin(c, { error: 'Invalid request. Please try again.' }), 403);
   }
-  const email = typeof body.email === 'string' ? body.email : '';
+  const email = normalizeEmail(body.email);
   const password = typeof body.password === 'string' ? body.password : '';
   if (password.length > MAX_PASSWORD_LENGTH) {
     return c.html(renderSignin(c, { error: 'Invalid email or password.' }), 401);
@@ -205,10 +209,10 @@ app.post('/register', async (c) => {
   if (!verifyCsrf(c, typeof body._csrf === 'string' ? body._csrf : '')) {
     return c.html(renderRegister(c, { error: 'Invalid request. Please try again.' }), 403);
   }
-  const email = typeof body.email === 'string' ? body.email.trim() : '';
+  const email = normalizeEmail(body.email);
   const password = typeof body.password === 'string' ? body.password : '';
-  if (!email) {
-    return c.html(renderRegister(c, { error: 'Email is required.' }), 400);
+  if (!isValidEmail(email)) {
+    return c.html(renderRegister(c, { error: 'Enter a valid email address.' }), 400);
   }
   if (password.length < MIN_PASSWORD_LENGTH) {
     return c.html(renderRegister(c, { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` }), 400);
