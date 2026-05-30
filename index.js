@@ -39,12 +39,17 @@ const hashPassword = async (password, salt) => {
   return { salt: useSalt, passwordHash: derived };
 };
 
+const DUMMY_SALT = crypto.randomBytes(16).toString('hex');
+const DUMMY_HASH = crypto.scryptSync('', DUMMY_SALT, SCRYPT_KEYLEN).toString('hex');
+
 const verifyPassword = async (user, password) => {
-  if (!user) return false;
-  const { passwordHash } = await hashPassword(password, user.salt);
+  const salt = user ? user.salt : DUMMY_SALT;
+  const target = user ? user.passwordHash : DUMMY_HASH;
+  const { passwordHash } = await hashPassword(password, salt);
   const a = Buffer.from(passwordHash, 'hex');
-  const b = Buffer.from(user.passwordHash, 'hex');
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  const b = Buffer.from(target, 'hex');
+  const match = a.length === b.length && crypto.timingSafeEqual(a, b);
+  return Boolean(user) && match;
 };
 
 const SESSION_SECRET = process.env.HMAC_SECRET || (isProduction ? null : 'insecure-dev-secret');

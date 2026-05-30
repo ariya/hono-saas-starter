@@ -29,7 +29,7 @@
 
 ### High
 
-- [ ] Login/registration user enumeration via timing oracle: `verifyPassword` skips the scrypt computation when the user does not exist, leaking account existence through response timing. Always perform a hash comparison against a dummy hash for unknown users.
+- [x] Login/registration user enumeration via timing oracle: `verifyPassword` skips the scrypt computation when the user does not exist, leaking account existence through response timing. Always perform a hash comparison against a dummy hash for unknown users.
 - [ ] Unbounded password length allows scrypt CPU-exhaustion DoS: cap the accepted password length (e.g. 128 chars) before hashing on both sign-in and registration.
 - [ ] No Content-Security-Policy header: configure `secureHeaders()` with a CSP that only permits the required stylesheet origin to harden against XSS.
 
