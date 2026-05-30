@@ -8,6 +8,15 @@ const { Eta } = require('eta');
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 
 const SESSION_COOKIE = 'session';
+const SESSION_MAX_AGE = 7 * 60 * 60;
+
+const sessionCookieOptions = () => ({
+  httpOnly: true,
+  secure: true,
+  sameSite: 'Lax',
+  path: '/',
+  maxAge: SESSION_MAX_AGE
+});
 
 const users = new Map();
 
@@ -37,7 +46,7 @@ app.post('/', async (c) => {
   if (!verifyPassword(user, password)) {
     return c.html(eta.render('signin', { title: pickWelcome(), error: 'Invalid email or password.' }), 401);
   }
-  setCookie(c, SESSION_COOKIE, user.email);
+  setCookie(c, SESSION_COOKIE, user.email, sessionCookieOptions());
   return c.redirect('/profile');
 });
 
