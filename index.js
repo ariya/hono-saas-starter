@@ -7,12 +7,14 @@ const { Eta } = require('eta');
 
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 7 * 60 * 60;
 
 const sessionCookieOptions = () => ({
   httpOnly: true,
-  secure: true,
+  secure: isProduction,
   sameSite: 'Lax',
   path: '/',
   maxAge: SESSION_MAX_AGE
