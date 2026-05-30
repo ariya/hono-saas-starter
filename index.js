@@ -5,6 +5,7 @@ const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { getCookie, setCookie, deleteCookie } = require('hono/cookie');
+const { getConnInfo } = require('@hono/node-server/conninfo');
 const { Eta } = require('eta');
 
 const eta = new Eta({ views: path.join(__dirname, 'views') });
@@ -104,6 +105,32 @@ const verifyCsrfToken = (token) => {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const RATE_LIMIT_MAX = 10;
+const rateLimitHits = new Map();
+
+const clientIp = (c) => {
+  const forwarded = c.req.header('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return getConnInfo(c).remote.address || 'unknown';
+};
+
+const isRateLimited = (key) => {
+  const now = Date.now();
+  if (rateLimitHits.size > 10000) {
+    for (const [existing, value] of rateLimitHits) {
+      if (now > value.reset) rateLimitHits.delete(existing);
+    }
+  }
+  const entry = rateLimitHits.get(key);
+  if (!entry || now > entry.reset) {
+    rateLimitHits.set(key, { count: 1, reset: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > RATE_LIMIT_MAX;
+};
+
 const app = new Hono();
 
 app.use(
@@ -132,6 +159,9 @@ app.get('/', (c) => {
 });
 
 app.post('/', async (c) => {
+  if (isRateLimited(`signin:${clientIp(c)}`)) {
+    return c.html(renderSignin({ error: 'Too many attempts. Please try again later.' }), 429);
+  }
   const body = await c.req.parseBody();
   if (!verifyCsrfToken(typeof body._csrf === 'string' ? body._csrf : '')) {
     return c.html(renderSignin({ error: 'Invalid request. Please try again.' }), 403);
@@ -163,6 +193,9 @@ app.get('/register', (c) => {
 });
 
 app.post('/register', async (c) => {
+  if (isRateLimited(`register:${clientIp(c)}`)) {
+    return c.html(renderRegister({ error: 'Too many attempts. Please try again later.' }), 429);
+  }
   const body = await c.req.parseBody();
   if (!verifyCsrfToken(typeof body._csrf === 'string' ? body._csrf : '')) {
     return c.html(renderRegister({ error: 'Invalid request. Please try again.' }), 403);
