@@ -14,6 +14,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 7 * 60 * 60;
 
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 128;
+
 const sessionCookieOptions = () => ({
   httpOnly: true,
   secure: isProduction,
@@ -123,6 +126,9 @@ app.post('/', async (c) => {
   }
   const email = typeof body.email === 'string' ? body.email : '';
   const password = typeof body.password === 'string' ? body.password : '';
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return c.html(renderSignin({ error: 'Invalid email or password.' }), 401);
+  }
   const user = findUser(email);
   if (!(await verifyPassword(user, password))) {
     return c.html(renderSignin({ error: 'Invalid email or password.' }), 401);
@@ -138,8 +144,6 @@ const currentUserEmail = (c) => {
 };
 
 const renderRegister = (extra = {}) => eta.render('register', { csrf: createCsrfToken(), ...extra });
-
-const MIN_PASSWORD_LENGTH = 8;
 
 app.get('/register', (c) => {
   if (currentUserEmail(c)) return c.redirect('/profile');
@@ -158,6 +162,9 @@ app.post('/register', async (c) => {
   }
   if (password.length < MIN_PASSWORD_LENGTH) {
     return c.html(renderRegister({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` }), 400);
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return c.html(renderRegister({ error: `Password must be at most ${MAX_PASSWORD_LENGTH} characters.` }), 400);
   }
   if (findUser(email)) {
     return c.html(renderRegister({ error: 'An account with that email already exists.' }), 409);
