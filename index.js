@@ -88,19 +88,24 @@ const readSession = (token) => {
   return email;
 };
 
-const createCsrfToken = () => {
-  const nonce = crypto.randomBytes(16).toString('hex');
-  return `${nonce}.${sign('csrf:' + nonce)}`;
+const CSRF_COOKIE = 'csrf';
+
+const csrfCookieId = (c) => {
+  let id = getCookie(c, CSRF_COOKIE);
+  if (!id) {
+    id = crypto.randomBytes(16).toString('hex');
+    setCookie(c, CSRF_COOKIE, id, { httpOnly: true, secure: isProduction, sameSite: 'Lax', path: '/' });
+  }
+  return id;
 };
 
-const verifyCsrfToken = (token) => {
-  if (!token) return false;
-  const idx = token.lastIndexOf('.');
-  if (idx < 0) return false;
-  const nonce = token.slice(0, idx);
-  const signature = token.slice(idx + 1);
-  const expected = sign('csrf:' + nonce);
-  const a = Buffer.from(signature);
+const csrfToken = (c) => sign('csrf:' + csrfCookieId(c));
+
+const verifyCsrf = (c, submitted) => {
+  const id = getCookie(c, CSRF_COOKIE);
+  if (!id || !submitted) return false;
+  const expected = sign('csrf:' + id);
+  const a = Buffer.from(submitted);
   const b = Buffer.from(expected);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
@@ -151,29 +156,29 @@ const welcomeTitles = ['Welcome', 'Welcome back', 'Hello again', 'Good to see yo
 
 const pickWelcome = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
-const renderSignin = (extra = {}) => eta.render('signin', { title: pickWelcome(), csrf: createCsrfToken(), ...extra });
+const renderSignin = (c, extra = {}) => eta.render('signin', { title: pickWelcome(), csrf: csrfToken(c), ...extra });
 
 app.get('/', (c) => {
   if (currentUserEmail(c)) return c.redirect('/profile');
-  return c.html(renderSignin());
+  return c.html(renderSignin(c));
 });
 
 app.post('/', async (c) => {
   if (isRateLimited(`signin:${clientIp(c)}`)) {
-    return c.html(renderSignin({ error: 'Too many attempts. Please try again later.' }), 429);
+    return c.html(renderSignin(c, { error: 'Too many attempts. Please try again later.' }), 429);
   }
   const body = await c.req.parseBody();
-  if (!verifyCsrfToken(typeof body._csrf === 'string' ? body._csrf : '')) {
-    return c.html(renderSignin({ error: 'Invalid request. Please try again.' }), 403);
+  if (!verifyCsrf(c, typeof body._csrf === 'string' ? body._csrf : '')) {
+    return c.html(renderSignin(c, { error: 'Invalid request. Please try again.' }), 403);
   }
   const email = typeof body.email === 'string' ? body.email : '';
   const password = typeof body.password === 'string' ? body.password : '';
   if (password.length > MAX_PASSWORD_LENGTH) {
-    return c.html(renderSignin({ error: 'Invalid email or password.' }), 401);
+    return c.html(renderSignin(c, { error: 'Invalid email or password.' }), 401);
   }
   const user = findUser(email);
   if (!(await verifyPassword(user, password))) {
-    return c.html(renderSignin({ error: 'Invalid email or password.' }), 401);
+    return c.html(renderSignin(c, { error: 'Invalid email or password.' }), 401);
   }
   setCookie(c, SESSION_COOKIE, createSession(user.email), sessionCookieOptions());
   return c.redirect('/profile');
@@ -185,34 +190,34 @@ const currentUserEmail = (c) => {
   return email;
 };
 
-const renderRegister = (extra = {}) => eta.render('register', { csrf: createCsrfToken(), ...extra });
+const renderRegister = (c, extra = {}) => eta.render('register', { csrf: csrfToken(c), ...extra });
 
 app.get('/register', (c) => {
   if (currentUserEmail(c)) return c.redirect('/profile');
-  return c.html(renderRegister());
+  return c.html(renderRegister(c));
 });
 
 app.post('/register', async (c) => {
   if (isRateLimited(`register:${clientIp(c)}`)) {
-    return c.html(renderRegister({ error: 'Too many attempts. Please try again later.' }), 429);
+    return c.html(renderRegister(c, { error: 'Too many attempts. Please try again later.' }), 429);
   }
   const body = await c.req.parseBody();
-  if (!verifyCsrfToken(typeof body._csrf === 'string' ? body._csrf : '')) {
-    return c.html(renderRegister({ error: 'Invalid request. Please try again.' }), 403);
+  if (!verifyCsrf(c, typeof body._csrf === 'string' ? body._csrf : '')) {
+    return c.html(renderRegister(c, { error: 'Invalid request. Please try again.' }), 403);
   }
   const email = typeof body.email === 'string' ? body.email.trim() : '';
   const password = typeof body.password === 'string' ? body.password : '';
   if (!email) {
-    return c.html(renderRegister({ error: 'Email is required.' }), 400);
+    return c.html(renderRegister(c, { error: 'Email is required.' }), 400);
   }
   if (password.length < MIN_PASSWORD_LENGTH) {
-    return c.html(renderRegister({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` }), 400);
+    return c.html(renderRegister(c, { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` }), 400);
   }
   if (password.length > MAX_PASSWORD_LENGTH) {
-    return c.html(renderRegister({ error: `Password must be at most ${MAX_PASSWORD_LENGTH} characters.` }), 400);
+    return c.html(renderRegister(c, { error: `Password must be at most ${MAX_PASSWORD_LENGTH} characters.` }), 400);
   }
   if (findUser(email)) {
-    return c.html(renderRegister({ error: 'An account with that email already exists.' }), 409);
+    return c.html(renderRegister(c, { error: 'An account with that email already exists.' }), 409);
   }
   const { passwordHash, salt } = await hashPassword(password);
   createUser(email, passwordHash, salt);
@@ -222,12 +227,12 @@ app.post('/register', async (c) => {
 app.get('/profile', (c) => {
   const email = currentUserEmail(c);
   if (!email) return c.redirect('/');
-  return c.html(eta.render('profile', { email, csrf: createCsrfToken() }));
+  return c.html(eta.render('profile', { email, csrf: csrfToken(c) }));
 });
 
 app.post('/signout', async (c) => {
   const body = await c.req.parseBody();
-  if (!verifyCsrfToken(typeof body._csrf === 'string' ? body._csrf : '')) {
+  if (!verifyCsrf(c, typeof body._csrf === 'string' ? body._csrf : '')) {
     return c.redirect('/profile');
   }
   deleteCookie(c, SESSION_COOKIE, { path: '/' });
