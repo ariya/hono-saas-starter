@@ -14,6 +14,8 @@ const createUser = (email, passwordHash, salt) => {
 
 const findUser = (email) => users.get(email);
 
+const verifyPassword = (user, password) => Boolean(user) && user.passwordHash === password;
+
 const app = new Hono();
 
 app.use(secureHeaders());
@@ -23,6 +25,17 @@ const welcomeTitles = ['Welcome', 'Welcome back', 'Hello again', 'Good to see yo
 const pickWelcome = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
 app.get('/', (c) => c.html(eta.render('signin', { title: pickWelcome() })));
+
+app.post('/', async (c) => {
+  const body = await c.req.parseBody();
+  const email = typeof body.email === 'string' ? body.email : '';
+  const password = typeof body.password === 'string' ? body.password : '';
+  const user = findUser(email);
+  if (!verifyPassword(user, password)) {
+    return c.text('Invalid email or password', 401);
+  }
+  return c.text('Signed in');
+});
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
