@@ -7,9 +7,13 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/oat.ink" />
   </head>
   <body>
+    <header>
+      <nav>
+        <span><%= it.email %></span>
+      </nav>
+    </header>
     <main>
       <h1>Profile</h1>
-      <p>Signed in as <%= it.email %>.</p>
     </main>
   </body>
 </html>
