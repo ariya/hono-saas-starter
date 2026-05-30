@@ -106,7 +106,19 @@ const verifyCsrfToken = (token) => {
 
 const app = new Hono();
 
-app.use(secureHeaders());
+app.use(
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+      imgSrc: ["'self'", 'data:'],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"]
+    }
+  })
+);
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello again', 'Good to see you', 'Glad you are here'];
 
