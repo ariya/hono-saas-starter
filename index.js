@@ -123,6 +123,13 @@ const currentUserEmail = (c) => {
   return email;
 };
 
+const renderRegister = (extra = {}) => eta.render('register', { csrf: createCsrfToken(), ...extra });
+
+app.get('/register', (c) => {
+  if (currentUserEmail(c)) return c.redirect('/profile');
+  return c.html(renderRegister());
+});
+
 app.get('/profile', (c) => {
   const email = currentUserEmail(c);
   if (!email) return c.redirect('/');

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Register</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/oat.ink" />
+  </head>
+  <body>
+    <main>
+      <h1>Create your account</h1>
+      <% if (it.error) { %>
+      <p role="alert"><%= it.error %></p>
+      <% } %>
+      <form method="post" action="/register">
+        <input type="hidden" name="_csrf" value="<%= it.csrf %>" />
+        <label>
+          Email
+          <input type="email" name="email" required />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" minlength="8" required />
+        </label>
+        <button type="submit">Register</button>
+      </form>
+      <p><a href="/">Back to sign in</a></p>
+    </main>
+  </body>
+</html>
