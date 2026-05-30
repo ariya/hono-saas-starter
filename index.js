@@ -6,6 +6,14 @@ const { Eta } = require('eta');
 
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 
+const users = new Map();
+
+const createUser = (email, passwordHash, salt) => {
+  users.set(email, { email, passwordHash, salt });
+};
+
+const findUser = (email) => users.get(email);
+
 const app = new Hono();
 
 app.use(secureHeaders());
