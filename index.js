@@ -4,7 +4,7 @@ const { promisify } = require('util');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
-const { setCookie } = require('hono/cookie');
+const { getCookie, setCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const eta = new Eta({ views: path.join(__dirname, 'views') });
@@ -112,6 +112,18 @@ app.post('/', async (c) => {
   }
   setCookie(c, SESSION_COOKIE, createSession(user.email), sessionCookieOptions());
   return c.redirect('/profile');
+});
+
+const currentUserEmail = (c) => {
+  const email = readSession(getCookie(c, SESSION_COOKIE));
+  if (!email || !findUser(email)) return null;
+  return email;
+};
+
+app.get('/profile', (c) => {
+  const email = currentUserEmail(c);
+  if (!email) return c.redirect('/');
+  return c.html(eta.render('profile', { email }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
