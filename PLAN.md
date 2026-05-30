@@ -25,7 +25,7 @@
 
 ### Critical
 
-- [ ] Session tokens are not time-limited server-side: the signed payload contains only the email, so a captured cookie value is valid forever. The 7-hour `maxAge` is client-controlled and not enforced. Bake an expiry timestamp into the signed session payload and reject expired tokens on validation.
+- [x] Session tokens are not time-limited server-side: the signed payload contains only the email, so a captured cookie value is valid forever. The 7-hour `maxAge` is client-controlled and not enforced. Bake an expiry timestamp into the signed session payload and reject expired tokens on validation.
 
 ### High
 

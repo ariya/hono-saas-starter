@@ -55,18 +55,27 @@ if (!SESSION_SECRET) {
 
 const sign = (value) => crypto.createHmac('sha256', SESSION_SECRET).update(value).digest('hex');
 
-const createSession = (email) => `${email}.${sign(email)}`;
+const createSession = (email) => {
+  const expires = Date.now() + SESSION_MAX_AGE * 1000;
+  const payload = `${expires}:${email}`;
+  return `${Buffer.from(payload).toString('base64url')}.${sign(payload)}`;
+};
 
 const readSession = (token) => {
   if (!token) return null;
   const idx = token.lastIndexOf('.');
   if (idx < 0) return null;
-  const email = token.slice(0, idx);
+  const payload = Buffer.from(token.slice(0, idx), 'base64url').toString();
   const signature = token.slice(idx + 1);
-  const expected = sign(email);
+  const expected = sign(payload);
   const a = Buffer.from(signature);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  const sep = payload.indexOf(':');
+  if (sep < 0) return null;
+  const expires = Number(payload.slice(0, sep));
+  const email = payload.slice(sep + 1);
+  if (!Number.isFinite(expires) || Date.now() > expires) return null;
   return email;
 };
 
