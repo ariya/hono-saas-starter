@@ -4,7 +4,7 @@ const { promisify } = require('util');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
-const { getCookie, setCookie } = require('hono/cookie');
+const { getCookie, setCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const eta = new Eta({ views: path.join(__dirname, 'views') });
@@ -157,6 +157,15 @@ app.get('/profile', (c) => {
   const email = currentUserEmail(c);
   if (!email) return c.redirect('/');
   return c.html(eta.render('profile', { email, csrf: createCsrfToken() }));
+});
+
+app.post('/signout', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(typeof body._csrf === 'string' ? body._csrf : '')) {
+    return c.redirect('/profile');
+  }
+  deleteCookie(c, SESSION_COOKIE, { path: '/' });
+  return c.redirect('/');
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
