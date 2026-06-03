@@ -1,4 +1,5 @@
 const path = require('path');
+const crypto = require('crypto');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
@@ -7,6 +8,18 @@ const { Eta } = require('eta');
 const eta = new Eta({ views: path.join(__dirname, 'views'), cache: true });
 
 const users = new Map();
+
+const hashPassword = (password, salt) => {
+  return crypto.scryptSync(password, salt, 64).toString('hex');
+};
+
+const verifyPassword = (password, salt, expectedHex) => {
+  const candidate = hashPassword(password, salt);
+  const a = Buffer.from(candidate, 'hex');
+  const b = Buffer.from(expectedHex, 'hex');
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+};
 
 const app = new Hono();
 
@@ -17,7 +30,21 @@ const WELCOME_TITLES = ['Welcome', 'Welcome back', 'Hello again', 'Good to see y
 const pickWelcomeTitle = () => WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
 
 app.get('/', (c) => {
-  return c.html(eta.render('signin', { title: pickWelcomeTitle() }));
+  return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: null, email: '' }));
+});
+
+app.post('/signin', async (c) => {
+  const body = await c.req.parseBody();
+  const email = String(body.email || '')
+    .trim()
+    .toLowerCase();
+  const password = String(body.password || '');
+  const user = users.get(email);
+  const ok = user && verifyPassword(password, user.salt, user.hash);
+  if (!ok) {
+    return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: 'Invalid email or password.', email }), 401);
+  }
+  return c.text('Signed in', 200);
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
