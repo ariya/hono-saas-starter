@@ -7,9 +7,14 @@
     <link rel="stylesheet" href="https://cdn.oat.ink/oat.min.css" />
   </head>
   <body>
+    <header class="navbar">
+      <div class="navbar-start">
+        <span class="navbar-item"><%= it.email %></span>
+      </div>
+      <div class="navbar-end"></div>
+    </header>
     <main class="container">
       <h1>Profile</h1>
-      <p>Signed in as <%= it.email %></p>
     </main>
   </body>
 </html>
