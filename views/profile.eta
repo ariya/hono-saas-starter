@@ -11,7 +11,12 @@
       <div class="navbar-start">
         <span class="navbar-item"><%= it.email %></span>
       </div>
-      <div class="navbar-end"></div>
+      <div class="navbar-end">
+        <form method="post" action="/signout" class="navbar-item">
+          <input type="hidden" name="_csrf" value="<%= it.csrf %>" />
+          <button type="submit">Sign Out</button>
+        </form>
+      </div>
     </header>
     <main class="container">
       <h1>Profile</h1>

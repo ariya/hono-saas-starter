@@ -187,7 +187,7 @@ app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 app.get('/profile', (c) => {
   const email = currentUserEmail(c);
   if (!email) return c.redirect('/', 303);
-  return c.html(eta.render('profile', { email }));
+  return c.html(eta.render('profile', { email, csrf: issueCsrfToken() }));
 });
 
 app.get('/register', (c) => {
