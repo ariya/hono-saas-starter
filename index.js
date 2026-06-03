@@ -167,21 +167,6 @@ app.post('/signin', async (c) => {
   return c.redirect('/profile', 303);
 });
 
-app.post('/signin', async (c) => {
-  const body = await c.req.parseBody();
-  const email = String(body.email || '')
-    .trim()
-    .toLowerCase();
-  const password = String(body.password || '');
-  const user = users.get(email);
-  const ok = user && verifyPassword(password, user.salt, user.hash);
-  if (!ok) {
-    return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: 'Invalid email or password.', email }), 401);
-  }
-  setCookie(c, SESSION_COOKIE, signSession(email), sessionCookieOptions());
-  return c.redirect('/profile', 303);
-});
-
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 app.get('/profile', (c) => {

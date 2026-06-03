@@ -25,7 +25,7 @@
 
 ### Critical
 
-- [ ] Remove the duplicate `app.post('/signin', ...)` handler that lacks CSRF verification (dead-code leftover from refactor that bypasses CSRF if ever reached).
+- [*] Remove the duplicate `app.post('/signin', ...)` handler that lacks CSRF verification (dead-code leftover from refactor that bypasses CSRF if ever reached).
 - [ ] Require `HMAC_SECRET` to be set unconditionally; remove the hardcoded `dev-only-insecure-secret` fallback (or replace with a random ephemeral secret generated at startup with a clear warning).
 - [ ] Eliminate the username-enumeration timing side channel in `/signin` by always executing a constant-time password comparison (run scrypt against a dummy hash when the user is not found).
 - [ ] Bind the CSRF token to a per-browser anti-CSRF cookie (double-submit pattern) so attackers cannot mint valid tokens from the public sign-in page and mount login-CSRF.
