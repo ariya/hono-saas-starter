@@ -219,6 +219,15 @@ app.post('/register', async (c) => {
   return c.html(eta.render('register-success', { email }));
 });
 
+app.post('/signout', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(String(body._csrf || ''))) {
+    return c.redirect('/profile', 303);
+  }
+  deleteCookie(c, SESSION_COOKIE, { path: '/' });
+  return c.redirect('/', 303);
+});
+
 const port = process.env.PORT || 3000;
 serve({ fetch: app.fetch, port });
 console.log('Listening on port', port);

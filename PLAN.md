@@ -19,4 +19,4 @@
 - [*] Implement registration logic: Save new users, display a success message, and auto-redirect to /.
 - [*] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [*] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
-- [ ] Implement the /signout handler to clear session cookies and redirect to the landing page.
+- [*] Implement the /signout handler to clear session cookies and redirect to the landing page.
