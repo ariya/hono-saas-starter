@@ -83,22 +83,40 @@ const sessionCookieOptions = () => ({
   maxAge: SESSION_MAX_AGE_SECONDS
 });
 
+const CSRF_COOKIE = 'csrf';
 const CSRF_TTL_SECONDS = 60 * 60;
 
-const issueCsrfToken = () => {
-  const nonce = b64url(crypto.randomBytes(16));
+const csrfCookieOptions = () => ({
+  httpOnly: true,
+  secure: IS_PROD,
+  sameSite: 'Lax',
+  path: '/',
+  maxAge: CSRF_TTL_SECONDS
+});
+
+const ensureCsrfCookie = (c) => {
+  let value = getCookie(c, CSRF_COOKIE);
+  if (!value || !/^[A-Za-z0-9_-]{16,64}$/.test(value)) {
+    value = b64url(crypto.randomBytes(24));
+    setCookie(c, CSRF_COOKIE, value, csrfCookieOptions());
+  }
+  return value;
+};
+
+const issueCsrfToken = (cookieValue) => {
   const issuedAt = Math.floor(Date.now() / 1000);
-  const payload = `${nonce}.${issuedAt}`;
+  const payload = `${cookieValue}.${issuedAt}`;
   const sig = b64url(hmac(`csrf:${payload}`));
   return `${payload}.${sig}`;
 };
 
-const verifyCsrfToken = (token) => {
-  if (typeof token !== 'string') return false;
+const verifyCsrfToken = (token, cookieValue) => {
+  if (typeof token !== 'string' || typeof cookieValue !== 'string' || !cookieValue) return false;
   const parts = token.split('.');
   if (parts.length !== 3) return false;
-  const [nonce, issuedAtStr, sigB64] = parts;
-  const payload = `${nonce}.${issuedAtStr}`;
+  const [tokenCookie, issuedAtStr, sigB64] = parts;
+  if (tokenCookie !== cookieValue) return false;
+  const payload = `${tokenCookie}.${issuedAtStr}`;
   let sig;
   let expected;
   try {
@@ -133,18 +151,23 @@ const pickWelcomeTitle = () => WELCOME_TITLES[Math.floor(Math.random() * WELCOME
 
 app.get('/', (c) => {
   if (currentUserEmail(c)) return c.redirect('/profile', 303);
-  return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: null, email: '', csrf: issueCsrfToken() }));
+  const csrfCookie = ensureCsrfCookie(c);
+  return c.html(
+    eta.render('signin', { title: pickWelcomeTitle(), error: null, email: '', csrf: issueCsrfToken(csrfCookie) })
+  );
 });
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
-  if (!verifyCsrfToken(String(body._csrf || ''))) {
+  const csrfCookie = getCookie(c, CSRF_COOKIE) || '';
+  if (!verifyCsrfToken(String(body._csrf || ''), csrfCookie)) {
+    const fresh = ensureCsrfCookie(c);
     return c.html(
       eta.render('signin', {
         title: pickWelcomeTitle(),
         error: 'Session expired. Please try again.',
         email: '',
-        csrf: issueCsrfToken()
+        csrf: issueCsrfToken(fresh)
       }),
       403
     );
@@ -159,12 +182,13 @@ app.post('/signin', async (c) => {
   const hashOk = verifyPassword(password, salt, hash);
   const ok = Boolean(user) && hashOk;
   if (!ok) {
+    const fresh = ensureCsrfCookie(c);
     return c.html(
       eta.render('signin', {
         title: pickWelcomeTitle(),
         error: 'Invalid email or password.',
         email,
-        csrf: issueCsrfToken()
+        csrf: issueCsrfToken(fresh)
       }),
       401
     );
@@ -178,12 +202,14 @@ app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 app.get('/profile', (c) => {
   const email = currentUserEmail(c);
   if (!email) return c.redirect('/', 303);
-  return c.html(eta.render('profile', { email, csrf: issueCsrfToken() }));
+  const csrfCookie = ensureCsrfCookie(c);
+  return c.html(eta.render('profile', { email, csrf: issueCsrfToken(csrfCookie) }));
 });
 
 app.get('/register', (c) => {
   if (currentUserEmail(c)) return c.redirect('/profile', 303);
-  return c.html(eta.render('register', { error: null, email: '', csrf: issueCsrfToken() }));
+  const csrfCookie = ensureCsrfCookie(c);
+  return c.html(eta.render('register', { error: null, email: '', csrf: issueCsrfToken(csrfCookie) }));
 });
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -191,9 +217,12 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 app.post('/register', async (c) => {
   const body = await c.req.parseBody();
-  const rerender = (error, email = '', status = 400) =>
-    c.html(eta.render('register', { error, email, csrf: issueCsrfToken() }), status);
-  if (!verifyCsrfToken(String(body._csrf || ''))) {
+  const csrfCookie = getCookie(c, CSRF_COOKIE) || '';
+  const rerender = (error, email = '', status = 400) => {
+    const fresh = ensureCsrfCookie(c);
+    return c.html(eta.render('register', { error, email, csrf: issueCsrfToken(fresh) }), status);
+  };
+  if (!verifyCsrfToken(String(body._csrf || ''), csrfCookie)) {
     return rerender('Session expired. Please try again.', '', 403);
   }
   const email = String(body.email || '')
@@ -212,7 +241,8 @@ app.post('/register', async (c) => {
 
 app.post('/signout', async (c) => {
   const body = await c.req.parseBody();
-  if (!verifyCsrfToken(String(body._csrf || ''))) {
+  const csrfCookie = getCookie(c, CSRF_COOKIE) || '';
+  if (!verifyCsrfToken(String(body._csrf || ''), csrfCookie)) {
     return c.redirect('/profile', 303);
   }
   deleteCookie(c, SESSION_COOKIE, { path: '/' });
