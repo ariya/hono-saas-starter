@@ -25,9 +25,9 @@ const verifyPassword = (password, salt, expectedHex) => {
 const SESSION_COOKIE = 'sid';
 const SESSION_MAX_AGE_SECONDS = 7 * 60 * 60;
 const IS_PROD = process.env.NODE_ENV === 'production';
-const HMAC_SECRET = process.env.HMAC_SECRET || (IS_PROD ? null : 'dev-only-insecure-secret');
-if (!HMAC_SECRET) {
-  console.error('HMAC_SECRET is required in production');
+const HMAC_SECRET = process.env.HMAC_SECRET;
+if (!HMAC_SECRET || HMAC_SECRET.length < 32) {
+  console.error('HMAC_SECRET environment variable is required and must be at least 32 characters');
   process.exit(1);
 }
 
