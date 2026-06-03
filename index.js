@@ -25,14 +25,15 @@ const verifyPassword = (password, salt, expectedHex) => {
   return crypto.timingSafeEqual(a, b);
 };
 
-const SESSION_COOKIE = 'sid';
-const SESSION_MAX_AGE_SECONDS = 7 * 60 * 60;
 const IS_PROD = process.env.NODE_ENV === 'production';
 const HMAC_SECRET = process.env.HMAC_SECRET;
 if (!HMAC_SECRET || HMAC_SECRET.length < 32) {
   console.error('HMAC_SECRET environment variable is required and must be at least 32 characters');
   process.exit(1);
 }
+
+const SESSION_COOKIE = IS_PROD ? '__Host-sid' : 'sid';
+const SESSION_MAX_AGE_SECONDS = 7 * 60 * 60;
 
 const b64url = (buf) => buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
