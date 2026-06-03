@@ -10,8 +10,11 @@ const eta = new Eta({ views: path.join(__dirname, 'views'), cache: true });
 
 const users = new Map();
 
+const SCRYPT_PARAMS = { N: 2 ** 16, r: 8, p: 1, maxmem: 128 * 1024 * 1024 };
+const SCRYPT_KEYLEN = 64;
+
 const hashPassword = (password, salt) => {
-  return crypto.scryptSync(password, salt, 64).toString('hex');
+  return crypto.scryptSync(password, salt, SCRYPT_KEYLEN, SCRYPT_PARAMS).toString('hex');
 };
 
 const DUMMY_SALT = crypto.randomBytes(16).toString('hex');
