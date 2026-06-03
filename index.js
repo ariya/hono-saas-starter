@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
-const { setCookie, deleteCookie } = require('hono/cookie');
+const { setCookie, deleteCookie, getCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const eta = new Eta({ views: path.join(__dirname, 'views'), cache: true });
@@ -173,6 +173,21 @@ app.post('/signin', async (c) => {
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
+
+const currentUserEmail = (c) => {
+  const token = getCookie(c, SESSION_COOKIE);
+  if (!token) return null;
+  const email = verifySession(token);
+  if (!email) return null;
+  if (!users.has(email)) return null;
+  return email;
+};
+
+app.get('/profile', (c) => {
+  const email = currentUserEmail(c);
+  if (!email) return c.redirect('/', 303);
+  return c.html(eta.render('profile', { email }));
+});
 
 const port = process.env.PORT || 3000;
 serve({ fetch: app.fetch, port });
