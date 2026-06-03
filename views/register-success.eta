@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Registration Complete</title>
+    <link rel="stylesheet" href="https://cdn.oat.ink/oat.min.css" />
+    <meta http-equiv="refresh" content="3; url=/" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Account created</h1>
+      <p>Welcome, <%= it.email %>. You will be redirected to the sign-in page shortly.</p>
+      <p><a href="/">Continue to sign in</a></p>
+    </main>
+  </body>
+</html>

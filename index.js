@@ -195,6 +195,30 @@ app.get('/register', (c) => {
   return c.html(eta.render('register', { error: null, email: '', csrf: issueCsrfToken() }));
 });
 
+const MIN_PASSWORD_LENGTH = 8;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  const rerender = (error, email = '', status = 400) =>
+    c.html(eta.render('register', { error, email, csrf: issueCsrfToken() }), status);
+  if (!verifyCsrfToken(String(body._csrf || ''))) {
+    return rerender('Session expired. Please try again.', '', 403);
+  }
+  const email = String(body.email || '')
+    .trim()
+    .toLowerCase();
+  const password = String(body.password || '');
+  if (!EMAIL_RE.test(email)) return rerender('Please enter a valid email address.', email);
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return rerender(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`, email);
+  }
+  if (users.has(email)) return rerender('An account with that email already exists.', email);
+  const salt = crypto.randomBytes(16).toString('hex');
+  users.set(email, { email, salt, hash: hashPassword(password, salt) });
+  return c.html(eta.render('register-success', { email }));
+});
+
 const port = process.env.PORT || 3000;
 serve({ fetch: app.fetch, port });
 console.log('Listening on port', port);
