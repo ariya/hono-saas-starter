@@ -44,19 +44,23 @@ const b64urlDecode = (str) => {
 
 const hmac = (data) => crypto.createHmac('sha256', HMAC_SECRET).update(data).digest();
 
+const activeSessions = new Map();
+
 const signSession = (email) => {
+  const jti = b64url(crypto.randomBytes(18));
   const issuedAt = Math.floor(Date.now() / 1000);
-  const payload = `${b64url(Buffer.from(email))}.${issuedAt}`;
+  const payload = `${b64url(Buffer.from(email))}.${jti}.${issuedAt}`;
   const sig = b64url(hmac(payload));
+  activeSessions.set(jti, { email, issuedAt });
   return `${payload}.${sig}`;
 };
 
 const verifySession = (token) => {
   if (typeof token !== 'string') return null;
   const parts = token.split('.');
-  if (parts.length !== 3) return null;
-  const [emailB64, issuedAtStr, sigB64] = parts;
-  const payload = `${emailB64}.${issuedAtStr}`;
+  if (parts.length !== 4) return null;
+  const [emailB64, jti, issuedAtStr, sigB64] = parts;
+  const payload = `${emailB64}.${jti}.${issuedAtStr}`;
   let sig;
   let expected;
   try {
@@ -69,10 +73,26 @@ const verifySession = (token) => {
   const issuedAt = Number.parseInt(issuedAtStr, 10);
   if (!Number.isFinite(issuedAt)) return null;
   if (Math.floor(Date.now() / 1000) - issuedAt > SESSION_MAX_AGE_SECONDS) return null;
+  const active = activeSessions.get(jti);
+  if (!active || active.issuedAt !== issuedAt) return null;
+  let email;
   try {
-    return b64urlDecode(emailB64).toString('utf8');
+    email = b64urlDecode(emailB64).toString('utf8');
   } catch {
     return null;
+  }
+  if (active.email !== email) return null;
+  return { email, jti };
+};
+
+const revokeSession = (jti) => {
+  if (jti) activeSessions.delete(jti);
+};
+
+const sweepExpiredSessions = () => {
+  const cutoff = Math.floor(Date.now() / 1000) - SESSION_MAX_AGE_SECONDS;
+  for (const [jti, s] of activeSessions) {
+    if (s.issuedAt < cutoff) activeSessions.delete(jti);
   }
 };
 
@@ -133,14 +153,16 @@ const verifyCsrfToken = (token, cookieValue) => {
   return true;
 };
 
-const currentUserEmail = (c) => {
+const currentSession = (c) => {
   const token = getCookie(c, SESSION_COOKIE);
   if (!token) return null;
-  const email = verifySession(token);
-  if (!email) return null;
-  if (!users.has(email)) return null;
-  return email;
+  const session = verifySession(token);
+  if (!session) return null;
+  if (!users.has(session.email)) return null;
+  return session;
 };
+
+const currentUserEmail = (c) => currentSession(c)?.email || null;
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX = 10;
@@ -311,10 +333,13 @@ app.post('/signout', async (c) => {
   if (!verifyCsrfToken(String(body._csrf || ''), csrfCookie)) {
     return c.redirect('/profile', 303);
   }
+  const session = currentSession(c);
+  if (session) revokeSession(session.jti);
   deleteCookie(c, SESSION_COOKIE, { path: '/' });
   return c.redirect('/', 303);
 });
 
 const port = process.env.PORT || 3000;
+setInterval(sweepExpiredSessions, 60 * 60 * 1000).unref();
 serve({ fetch: app.fetch, port });
 console.log('Listening on port', port);

@@ -36,7 +36,7 @@
 ### High
 
 - [*] Use the `__Host-` prefix for the session cookie in production for defense-in-depth (forces Secure + Path=/ + no Domain).
-- [ ] Introduce a per-session nonce stored server-side so that `/signout` truly revokes the token instead of relying on the client to delete the cookie.
+- [*] Introduce a per-session nonce stored server-side so that `/signout` truly revokes the token instead of relying on the client to delete the cookie.
 - [*] Validate the `Content-Type` of POST requests to ensure the body parser only accepts `application/x-www-form-urlencoded` for these endpoints.
 
 ### Medium
