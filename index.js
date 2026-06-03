@@ -23,6 +23,16 @@ const verifyPassword = (password, salt, expectedHex) => {
 };
 
 const SESSION_COOKIE = 'sid';
+const SESSION_MAX_AGE_SECONDS = 7 * 60 * 60;
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+const sessionCookieOptions = () => ({
+  httpOnly: true,
+  secure: IS_PROD,
+  sameSite: 'Lax',
+  path: '/',
+  maxAge: SESSION_MAX_AGE_SECONDS
+});
 
 const app = new Hono();
 
@@ -47,7 +57,7 @@ app.post('/signin', async (c) => {
   if (!ok) {
     return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: 'Invalid email or password.', email }), 401);
   }
-  setCookie(c, SESSION_COOKIE, email);
+  setCookie(c, SESSION_COOKIE, email, sessionCookieOptions());
   return c.redirect('/profile', 303);
 });
 
