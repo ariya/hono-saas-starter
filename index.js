@@ -14,6 +14,9 @@ const hashPassword = (password, salt) => {
   return crypto.scryptSync(password, salt, 64).toString('hex');
 };
 
+const DUMMY_SALT = crypto.randomBytes(16).toString('hex');
+const DUMMY_HASH = hashPassword('dummy-password-for-timing', DUMMY_SALT);
+
 const verifyPassword = (password, salt, expectedHex) => {
   const candidate = hashPassword(password, salt);
   const a = Buffer.from(candidate, 'hex');
@@ -151,7 +154,10 @@ app.post('/signin', async (c) => {
     .toLowerCase();
   const password = String(body.password || '');
   const user = users.get(email);
-  const ok = user && verifyPassword(password, user.salt, user.hash);
+  const salt = user ? user.salt : DUMMY_SALT;
+  const hash = user ? user.hash : DUMMY_HASH;
+  const hashOk = verifyPassword(password, salt, hash);
+  const ok = Boolean(user) && hashOk;
   if (!ok) {
     return c.html(
       eta.render('signin', {
