@@ -80,6 +80,37 @@ const sessionCookieOptions = () => ({
   maxAge: SESSION_MAX_AGE_SECONDS
 });
 
+const CSRF_TTL_SECONDS = 60 * 60;
+
+const issueCsrfToken = () => {
+  const nonce = b64url(crypto.randomBytes(16));
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const payload = `${nonce}.${issuedAt}`;
+  const sig = b64url(hmac(`csrf:${payload}`));
+  return `${payload}.${sig}`;
+};
+
+const verifyCsrfToken = (token) => {
+  if (typeof token !== 'string') return false;
+  const parts = token.split('.');
+  if (parts.length !== 3) return false;
+  const [nonce, issuedAtStr, sigB64] = parts;
+  const payload = `${nonce}.${issuedAtStr}`;
+  let sig;
+  let expected;
+  try {
+    sig = b64urlDecode(sigB64);
+    expected = hmac(`csrf:${payload}`);
+  } catch {
+    return false;
+  }
+  if (sig.length !== expected.length || !crypto.timingSafeEqual(sig, expected)) return false;
+  const issuedAt = Number.parseInt(issuedAtStr, 10);
+  if (!Number.isFinite(issuedAt)) return false;
+  if (Math.floor(Date.now() / 1000) - issuedAt > CSRF_TTL_SECONDS) return false;
+  return true;
+};
+
 const app = new Hono();
 
 app.use(secureHeaders());
@@ -89,7 +120,41 @@ const WELCOME_TITLES = ['Welcome', 'Welcome back', 'Hello again', 'Good to see y
 const pickWelcomeTitle = () => WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
 
 app.get('/', (c) => {
-  return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: null, email: '' }));
+  return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: null, email: '', csrf: issueCsrfToken() }));
+});
+
+app.post('/signin', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(String(body._csrf || ''))) {
+    return c.html(
+      eta.render('signin', {
+        title: pickWelcomeTitle(),
+        error: 'Session expired. Please try again.',
+        email: '',
+        csrf: issueCsrfToken()
+      }),
+      403
+    );
+  }
+  const email = String(body.email || '')
+    .trim()
+    .toLowerCase();
+  const password = String(body.password || '');
+  const user = users.get(email);
+  const ok = user && verifyPassword(password, user.salt, user.hash);
+  if (!ok) {
+    return c.html(
+      eta.render('signin', {
+        title: pickWelcomeTitle(),
+        error: 'Invalid email or password.',
+        email,
+        csrf: issueCsrfToken()
+      }),
+      401
+    );
+  }
+  setCookie(c, SESSION_COOKIE, signSession(email), sessionCookieOptions());
+  return c.redirect('/profile', 303);
 });
 
 app.post('/signin', async (c) => {
