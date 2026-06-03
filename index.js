@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
+const { setCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const eta = new Eta({ views: path.join(__dirname, 'views'), cache: true });
@@ -20,6 +21,8 @@ const verifyPassword = (password, salt, expectedHex) => {
   if (a.length !== b.length) return false;
   return crypto.timingSafeEqual(a, b);
 };
+
+const SESSION_COOKIE = 'sid';
 
 const app = new Hono();
 
@@ -44,7 +47,8 @@ app.post('/signin', async (c) => {
   if (!ok) {
     return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: 'Invalid email or password.', email }), 401);
   }
-  return c.text('Signed in', 200);
+  setCookie(c, SESSION_COOKIE, email);
+  return c.redirect('/profile', 303);
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
