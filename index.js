@@ -263,9 +263,7 @@ app.post('/signin', rateLimit('signin'), async (c) => {
       403
     );
   }
-  const email = String(body.email || '')
-    .trim()
-    .toLowerCase();
+  const email = normalizeEmail(body.email);
   const password = String(body.password || '');
   const user = users.get(email);
   const salt = user ? user.salt : DUMMY_SALT;
@@ -306,6 +304,12 @@ app.get('/register', (c) => {
 const MIN_PASSWORD_LENGTH = 8;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const normalizeEmail = (input) =>
+  String(input || '')
+    .normalize('NFKC')
+    .trim()
+    .toLowerCase();
+
 app.post('/register', rateLimit('register'), async (c) => {
   const body = await c.req.parseBody();
   const csrfCookie = getCookie(c, CSRF_COOKIE) || '';
@@ -316,9 +320,7 @@ app.post('/register', rateLimit('register'), async (c) => {
   if (!verifyCsrfToken(String(body._csrf || ''), csrfCookie)) {
     return rerender('Session expired. Please try again.', '', 403);
   }
-  const email = String(body.email || '')
-    .trim()
-    .toLowerCase();
+  const email = normalizeEmail(body.email);
   const password = String(body.password || '');
   if (!EMAIL_RE.test(email)) return rerender('Please enter a valid email address.', email);
   if (password.length < MIN_PASSWORD_LENGTH) {

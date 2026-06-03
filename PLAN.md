@@ -42,7 +42,7 @@
 ### Medium
 
 - [*] Tune scrypt parameters (`N`, `r`, `p`, `keylen`) explicitly rather than relying on Node defaults that are now considered low for 2026.
-- [ ] Normalize email addresses with Unicode NFKC before storage/lookup to avoid duplicate-effective accounts.
+- [*] Normalize email addresses with Unicode NFKC before storage/lookup to avoid duplicate-effective accounts.
 
 ### Low
 
