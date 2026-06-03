@@ -141,6 +141,38 @@ const currentUserEmail = (c) => {
   return email;
 };
 
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX = 10;
+const rateBuckets = new Map();
+
+const clientKey = (c) => {
+  const fwd = c.req.header('x-forwarded-for');
+  if (fwd) return fwd.split(',')[0].trim();
+  return c.env?.incoming?.socket?.remoteAddress || 'unknown';
+};
+
+const rateLimit = (scope) => async (c, next) => {
+  const key = `${scope}:${clientKey(c)}`;
+  const now = Date.now();
+  const bucket = rateBuckets.get(key);
+  if (!bucket || now - bucket.start > RATE_LIMIT_WINDOW_MS) {
+    rateBuckets.set(key, { start: now, count: 1 });
+  } else {
+    bucket.count += 1;
+    if (bucket.count > RATE_LIMIT_MAX) {
+      const retry = Math.ceil((bucket.start + RATE_LIMIT_WINDOW_MS - now) / 1000);
+      c.header('Retry-After', String(Math.max(retry, 1)));
+      return c.text('Too many requests. Please try again later.', 429);
+    }
+  }
+  if (rateBuckets.size > 10000) {
+    for (const [k, v] of rateBuckets) {
+      if (now - v.start > RATE_LIMIT_WINDOW_MS) rateBuckets.delete(k);
+    }
+  }
+  return next();
+};
+
 const app = new Hono();
 
 app.use(secureHeaders());
@@ -157,7 +189,7 @@ app.get('/', (c) => {
   );
 });
 
-app.post('/signin', async (c) => {
+app.post('/signin', rateLimit('signin'), async (c) => {
   const body = await c.req.parseBody();
   const csrfCookie = getCookie(c, CSRF_COOKIE) || '';
   if (!verifyCsrfToken(String(body._csrf || ''), csrfCookie)) {
@@ -215,7 +247,7 @@ app.get('/register', (c) => {
 const MIN_PASSWORD_LENGTH = 8;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-app.post('/register', async (c) => {
+app.post('/register', rateLimit('register'), async (c) => {
   const body = await c.req.parseBody();
   const csrfCookie = getCookie(c, CSRF_COOKIE) || '';
   const rerender = (error, email = '', status = 400) => {
