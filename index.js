@@ -6,6 +6,8 @@ const { Eta } = require('eta');
 
 const eta = new Eta({ views: path.join(__dirname, 'views'), cache: true });
 
+const users = new Map();
+
 const app = new Hono();
 
 app.use(secureHeaders());
