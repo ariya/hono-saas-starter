@@ -25,6 +25,52 @@ const verifyPassword = (password, salt, expectedHex) => {
 const SESSION_COOKIE = 'sid';
 const SESSION_MAX_AGE_SECONDS = 7 * 60 * 60;
 const IS_PROD = process.env.NODE_ENV === 'production';
+const HMAC_SECRET = process.env.HMAC_SECRET || (IS_PROD ? null : 'dev-only-insecure-secret');
+if (!HMAC_SECRET) {
+  console.error('HMAC_SECRET is required in production');
+  process.exit(1);
+}
+
+const b64url = (buf) => buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+const b64urlDecode = (str) => {
+  const pad = str.length % 4 === 0 ? '' : '='.repeat(4 - (str.length % 4));
+  return Buffer.from(str.replace(/-/g, '+').replace(/_/g, '/') + pad, 'base64');
+};
+
+const hmac = (data) => crypto.createHmac('sha256', HMAC_SECRET).update(data).digest();
+
+const signSession = (email) => {
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const payload = `${b64url(Buffer.from(email))}.${issuedAt}`;
+  const sig = b64url(hmac(payload));
+  return `${payload}.${sig}`;
+};
+
+const verifySession = (token) => {
+  if (typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [emailB64, issuedAtStr, sigB64] = parts;
+  const payload = `${emailB64}.${issuedAtStr}`;
+  let sig;
+  let expected;
+  try {
+    sig = b64urlDecode(sigB64);
+    expected = hmac(payload);
+  } catch {
+    return null;
+  }
+  if (sig.length !== expected.length || !crypto.timingSafeEqual(sig, expected)) return null;
+  const issuedAt = Number.parseInt(issuedAtStr, 10);
+  if (!Number.isFinite(issuedAt)) return null;
+  if (Math.floor(Date.now() / 1000) - issuedAt > SESSION_MAX_AGE_SECONDS) return null;
+  try {
+    return b64urlDecode(emailB64).toString('utf8');
+  } catch {
+    return null;
+  }
+};
 
 const sessionCookieOptions = () => ({
   httpOnly: true,
@@ -57,7 +103,7 @@ app.post('/signin', async (c) => {
   if (!ok) {
     return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: 'Invalid email or password.', email }), 401);
   }
-  setCookie(c, SESSION_COOKIE, email, sessionCookieOptions());
+  setCookie(c, SESSION_COOKIE, signSession(email), sessionCookieOptions());
   return c.redirect('/profile', 303);
 });
 
