@@ -175,6 +175,22 @@ const rateLimit = (scope) => async (c, next) => {
 
 const app = new Hono();
 
+const MAX_BODY_BYTES = 8 * 1024;
+
+app.use(async (c, next) => {
+  if (c.req.method === 'POST') {
+    const len = c.req.header('content-length');
+    if (len && Number.parseInt(len, 10) > MAX_BODY_BYTES) {
+      return c.text('Request body too large.', 413);
+    }
+    const ct = (c.req.header('content-type') || '').split(';')[0].trim().toLowerCase();
+    if (ct !== 'application/x-www-form-urlencoded') {
+      return c.text('Unsupported media type.', 415);
+    }
+  }
+  return next();
+});
+
 app.use(secureHeaders());
 
 const WELCOME_TITLES = ['Welcome', 'Welcome back', 'Hello again', 'Good to see you', 'Sign in to continue'];

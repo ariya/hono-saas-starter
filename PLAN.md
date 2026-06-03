@@ -30,14 +30,14 @@
 - [*] Eliminate the username-enumeration timing side channel in `/signin` by always executing a constant-time password comparison (run scrypt against a dummy hash when the user is not found).
 - [*] Bind the CSRF token to a per-browser anti-CSRF cookie (double-submit pattern) so attackers cannot mint valid tokens from the public sign-in page and mount login-CSRF.
 - [*] Add an in-process rate limiter on `/signin` and `/register` (per remote address) to mitigate password brute-force and account enumeration.
-- [ ] Reject oversized request bodies before `parseBody` to prevent memory-exhaustion DoS (enforce a small Content-Length cap).
+- [*] Reject oversized request bodies before `parseBody` to prevent memory-exhaustion DoS (enforce a small Content-Length cap).
 - [ ] Define an explicit Content-Security-Policy via `secureHeaders` allowing only `self` and the Oat.ink stylesheet host, blocking inline scripts and arbitrary origins.
 
 ### High
 
 - [ ] Use the `__Host-` prefix for the session cookie in production for defense-in-depth (forces Secure + Path=/ + no Domain).
 - [ ] Introduce a per-session nonce stored server-side so that `/signout` truly revokes the token instead of relying on the client to delete the cookie.
-- [ ] Validate the `Content-Type` of POST requests to ensure the body parser only accepts `application/x-www-form-urlencoded` for these endpoints.
+- [*] Validate the `Content-Type` of POST requests to ensure the body parser only accepts `application/x-www-form-urlencoded` for these endpoints.
 
 ### Medium
 
