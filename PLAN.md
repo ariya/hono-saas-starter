@@ -31,7 +31,7 @@
 - [*] Bind the CSRF token to a per-browser anti-CSRF cookie (double-submit pattern) so attackers cannot mint valid tokens from the public sign-in page and mount login-CSRF.
 - [*] Add an in-process rate limiter on `/signin` and `/register` (per remote address) to mitigate password brute-force and account enumeration.
 - [*] Reject oversized request bodies before `parseBody` to prevent memory-exhaustion DoS (enforce a small Content-Length cap).
-- [ ] Define an explicit Content-Security-Policy via `secureHeaders` allowing only `self` and the Oat.ink stylesheet host, blocking inline scripts and arbitrary origins.
+- [*] Define an explicit Content-Security-Policy via `secureHeaders` allowing only `self` and the Oat.ink stylesheet host, blocking inline scripts and arbitrary origins.
 
 ### High
 

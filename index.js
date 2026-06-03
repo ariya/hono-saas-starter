@@ -191,7 +191,24 @@ app.use(async (c, next) => {
   return next();
 });
 
-app.use(secureHeaders());
+app.use(
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", 'https://cdn.oat.ink'],
+      imgSrc: ["'self'", 'data:'],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", 'https://cdn.oat.ink', 'data:'],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      upgradeInsecureRequests: []
+    },
+    referrerPolicy: 'no-referrer'
+  })
+);
 
 const WELCOME_TITLES = ['Welcome', 'Welcome back', 'Hello again', 'Good to see you', 'Sign in to continue'];
 
