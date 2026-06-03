@@ -190,6 +190,11 @@ app.get('/profile', (c) => {
   return c.html(eta.render('profile', { email }));
 });
 
+app.get('/register', (c) => {
+  if (currentUserEmail(c)) return c.redirect('/profile', 303);
+  return c.html(eta.render('register', { error: null, email: '', csrf: issueCsrfToken() }));
+});
+
 const port = process.env.PORT || 3000;
 serve({ fetch: app.fetch, port });
 console.log('Listening on port', port);
