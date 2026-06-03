@@ -111,6 +111,15 @@ const verifyCsrfToken = (token) => {
   return true;
 };
 
+const currentUserEmail = (c) => {
+  const token = getCookie(c, SESSION_COOKIE);
+  if (!token) return null;
+  const email = verifySession(token);
+  if (!email) return null;
+  if (!users.has(email)) return null;
+  return email;
+};
+
 const app = new Hono();
 
 app.use(secureHeaders());
@@ -120,6 +129,7 @@ const WELCOME_TITLES = ['Welcome', 'Welcome back', 'Hello again', 'Good to see y
 const pickWelcomeTitle = () => WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
 
 app.get('/', (c) => {
+  if (currentUserEmail(c)) return c.redirect('/profile', 303);
   return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: null, email: '', csrf: issueCsrfToken() }));
 });
 
@@ -173,15 +183,6 @@ app.post('/signin', async (c) => {
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
-
-const currentUserEmail = (c) => {
-  const token = getCookie(c, SESSION_COOKIE);
-  if (!token) return null;
-  const email = verifySession(token);
-  if (!email) return null;
-  if (!users.has(email)) return null;
-  return email;
-};
 
 app.get('/profile', (c) => {
   const email = currentUserEmail(c);
