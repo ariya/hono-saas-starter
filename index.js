@@ -221,11 +221,11 @@ app.use(
   secureHeaders({
     contentSecurityPolicy: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", 'https://cdn.oat.ink'],
+      styleSrc: ["'self'", 'https://unpkg.com'],
       imgSrc: ["'self'", 'data:'],
       scriptSrc: ["'self'"],
       connectSrc: ["'self'"],
-      fontSrc: ["'self'", 'https://cdn.oat.ink', 'data:'],
+      fontSrc: ["'self'", 'https://unpkg.com', 'data:'],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"],

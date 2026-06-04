@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Registration Complete</title>
-    <link rel="stylesheet" href="https://cdn.oat.ink/oat.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css" />
     <meta http-equiv="refresh" content="3; url=/" />
   </head>
   <body>
