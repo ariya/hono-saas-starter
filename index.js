@@ -68,11 +68,21 @@ function renderSignIn(c, error) {
   return c.html(eta.render('sign-in', { title, error, csrf }));
 }
 
+function getSessionEmail(c) {
+  const cookie = c.req.header('Cookie') || '';
+  const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
+  if (!match) return null;
+  return verifySession(decodeURIComponent(match[1]));
+}
+
 const app = new Hono();
 
 app.use(secureHeaders());
 
-app.get('/', (c) => renderSignIn(c, null));
+app.get('/', (c) => {
+  if (getSessionEmail(c)) return c.redirect('/profile');
+  return renderSignIn(c, null);
+});
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
@@ -92,6 +102,12 @@ app.post('/', async (c) => {
   const token = signSession(email);
   c.header('Set-Cookie', sessionCookie(token));
   return c.redirect('/profile');
+});
+
+app.get('/profile', (c) => {
+  const email = getSessionEmail(c);
+  if (!email) return c.redirect('/');
+  return c.html(eta.render('profile', { email }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
