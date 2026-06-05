@@ -16,11 +16,34 @@ const SCRYPT_KEYLEN = 64;
 const SCRYPT_COST = { N: 16384, r: 8, p: 1 };
 
 const MIN_PASSWORD_LEN = 8;
+const MAX_PASSWORD_LEN = 128;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000;
+const RATE_LIMIT_MAX = 20;
+const DUMMY_SALT = crypto.randomBytes(16).toString('hex');
+const DUMMY_HASH = hashPasswordRaw('dummy', DUMMY_SALT);
 
 const users = new Map();
+const rateLimits = new Map();
 
-function hashPassword(password, salt) {
+function hashPasswordRaw(password, salt) {
   return crypto.scryptSync(password, salt, SCRYPT_KEYLEN, SCRYPT_COST).toString('hex');
+}
+
+function safeCompare(a, b) {
+  if (!/^[0-9a-f]+$/i.test(a) || !/^[0-9a-f]+$/i.test(b) || a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a, 'hex'), Buffer.from(b, 'hex'));
+}
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = rateLimits.get(ip);
+  if (!entry || now - entry.start > RATE_LIMIT_WINDOW) {
+    rateLimits.set(ip, { start: now, count: 1 });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= RATE_LIMIT_MAX;
 }
 
 function signSession(email) {
@@ -91,6 +114,10 @@ function getSessionEmail(c) {
   return verifySession(decodeURIComponent(match[1]));
 }
 
+function getClientIp(c) {
+  return c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || c.req.header('x-real-ip') || 'unknown';
+}
+
 const app = new Hono();
 
 app.use(secureHeaders());
@@ -107,11 +134,22 @@ app.post('/', async (c) => {
     return renderSignIn(c, 'Invalid request. Please try again.');
   }
 
+  if (!checkRateLimit(getClientIp(c))) {
+    return renderSignIn(c, 'Too many attempts. Please try again later.');
+  }
+
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password || '';
 
+  if (!EMAIL_RE.test(email)) {
+    return renderSignIn(c, 'Invalid email or password');
+  }
+
   const user = users.get(email);
-  if (!user || hashPassword(password, user.salt) !== user.hash) {
+  const hash = user ? hashPasswordRaw(password, user.salt) : DUMMY_HASH;
+  const stored = user ? user.hash : DUMMY_HASH;
+
+  if (!user || !safeCompare(hash, stored)) {
     return renderSignIn(c, 'Invalid email or password');
   }
 
@@ -132,19 +170,31 @@ app.post('/register', async (c) => {
     return renderRegister(c, 'Invalid request. Please try again.');
   }
 
+  if (!checkRateLimit(getClientIp(c))) {
+    return renderRegister(c, 'Too many attempts. Please try again later.');
+  }
+
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password || '';
+
+  if (!EMAIL_RE.test(email)) {
+    return renderRegister(c, 'Invalid email format');
+  }
 
   if (password.length < MIN_PASSWORD_LEN) {
     return renderRegister(c, `Password must be at least ${MIN_PASSWORD_LEN} characters`);
   }
 
+  if (password.length > MAX_PASSWORD_LEN) {
+    return renderRegister(c, `Password must be at most ${MAX_PASSWORD_LEN} characters`);
+  }
+
   if (users.has(email)) {
-    return renderRegister(c, 'An account with this email already exists');
+    return renderRegister(c, 'If this email is not registered, you will receive a confirmation email');
   }
 
   const salt = crypto.randomBytes(16).toString('hex');
-  const hash = hashPassword(password, salt);
+  const hash = hashPasswordRaw(password, salt);
   users.set(email, { hash, salt });
 
   return c.redirect('/');
@@ -153,10 +203,15 @@ app.post('/register', async (c) => {
 app.get('/profile', (c) => {
   const email = getSessionEmail(c);
   if (!email) return c.redirect('/');
-  return c.html(eta.render('profile', { email }));
+  const csrf = generateCsrfToken();
+  return c.html(eta.render('profile', { email, csrf }));
 });
 
-app.post('/signout', (c) => {
+app.post('/signout', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(body._csrf)) {
+    return c.redirect('/profile');
+  }
   c.header('Set-Cookie', clearSessionCookie());
   return c.redirect('/');
 });

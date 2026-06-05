@@ -28,10 +28,10 @@
 
 ## Security Audit — HIGH
 
-- [ ] Use timingSafeEqual for password hash comparison instead of !== operator.
-- [ ] Add CSRF protection to the /signout endpoint.
-- [ ] Add server-side email format validation on registration and sign-in.
-- [ ] Add rate limiting on authentication endpoints.
+- [*] Use timingSafeEqual for password hash comparison instead of !== operator.
+- [*] Add CSRF protection to the /signout endpoint.
+- [*] Add server-side email format validation on registration and sign-in.
+- [*] Add rate limiting on authentication endpoints.
 
 ## Security Audit — MEDIUM
 
