@@ -15,6 +15,8 @@ const SESSION_MAX_AGE = 7 * 60 * 60;
 const SCRYPT_KEYLEN = 64;
 const SCRYPT_COST = { N: 16384, r: 8, p: 1 };
 
+const MIN_PASSWORD_LEN = 8;
+
 const users = new Map();
 
 function hashPassword(password, salt) {
@@ -68,6 +70,11 @@ function renderSignIn(c, error) {
   return c.html(eta.render('sign-in', { title, error, csrf }));
 }
 
+function renderRegister(c, error) {
+  const csrf = generateCsrfToken();
+  return c.html(eta.render('register', { error, csrf }));
+}
+
 function getSessionEmail(c) {
   const cookie = c.req.header('Cookie') || '';
   const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
@@ -102,6 +109,36 @@ app.post('/', async (c) => {
   const token = signSession(email);
   c.header('Set-Cookie', sessionCookie(token));
   return c.redirect('/profile');
+});
+
+app.get('/register', (c) => {
+  if (getSessionEmail(c)) return c.redirect('/profile');
+  return renderRegister(c, null);
+});
+
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+
+  if (!verifyCsrfToken(body._csrf)) {
+    return renderRegister(c, 'Invalid request. Please try again.');
+  }
+
+  const email = (body.email || '').trim().toLowerCase();
+  const password = body.password || '';
+
+  if (password.length < MIN_PASSWORD_LEN) {
+    return renderRegister(c, `Password must be at least ${MIN_PASSWORD_LEN} characters`);
+  }
+
+  if (users.has(email)) {
+    return renderRegister(c, 'An account with this email already exists');
+  }
+
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = hashPassword(password, salt);
+  users.set(email, { hash, salt });
+
+  return c.redirect('/');
 });
 
 app.get('/profile', (c) => {

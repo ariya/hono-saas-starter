@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sign In</title>
+    <title>Register</title>
     <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css" />
     <script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
   </head>
@@ -11,9 +11,9 @@
     <main style="display: flex; justify-content: center; align-items: center; min-height: 100vh">
       <article class="card" style="width: 100%; max-width: 400px; margin: var(--space-4)">
         <header>
-          <h2><%= it.title %></h2>
+          <h2>Create Account</h2>
         </header>
-        <form method="POST" action="/">
+        <form method="POST" action="/register">
           <input type="hidden" name="_csrf" value="<%= it.csrf %>" />
           <% if (it.error) { %>
           <div role="alert" data-variant="error"><%= it.error %></div>
@@ -25,12 +25,13 @@
           </label>
           <label data-field>
             Password
-            <input type="password" name="password" required autocomplete="current-password" />
+            <input type="password" name="password" required autocomplete="new-password" minlength="8" />
+            <small data-hint>Minimum 8 characters</small>
           </label>
-          <button type="submit" style="width: 100%">Sign In</button>
+          <button type="submit" style="width: 100%">Register</button>
         </form>
         <footer>
-          <p><a href="/register">Register for account</a></p>
+          <p><a href="/">Already have an account? Sign in</a></p>
         </footer>
       </article>
     </main>
