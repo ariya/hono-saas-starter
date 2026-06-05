@@ -45,24 +45,48 @@ function sessionCookie(token) {
   return parts.join('; ');
 }
 
+function generateCsrfToken() {
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const sig = crypto.createHmac('sha256', HMAC_SECRET).update(nonce).digest('hex');
+  return `${nonce}.${sig}`;
+}
+
+function verifyCsrfToken(token) {
+  if (!token) return false;
+  const dot = token.lastIndexOf('.');
+  if (dot === -1) return false;
+  const nonce = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  const expected = crypto.createHmac('sha256', HMAC_SECRET).update(nonce).digest('hex');
+  if (sig.length !== expected.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
+}
+
+function renderSignIn(c, error) {
+  const title = WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
+  const csrf = generateCsrfToken();
+  return c.html(eta.render('sign-in', { title, error, csrf }));
+}
+
 const app = new Hono();
 
 app.use(secureHeaders());
 
-app.get('/', (c) => {
-  const title = WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
-  return c.html(eta.render('sign-in', { title, error: null }));
-});
+app.get('/', (c) => renderSignIn(c, null));
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
+
+  if (!verifyCsrfToken(body._csrf)) {
+    return renderSignIn(c, 'Invalid request. Please try again.');
+  }
+
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password || '';
-  const title = WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
 
   const user = users.get(email);
   if (!user || hashPassword(password, user.salt) !== user.hash) {
-    return c.html(eta.render('sign-in', { title, error: 'Invalid email or password' }));
+    return renderSignIn(c, 'Invalid email or password');
   }
 
   const token = signSession(email);

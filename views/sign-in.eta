@@ -14,6 +14,7 @@
           <h2><%= it.title %></h2>
         </header>
         <form method="POST" action="/">
+          <input type="hidden" name="_csrf" value="<%= it.csrf %>" />
           <% if (it.error) { %>
           <div role="alert" data-variant="error"><%= it.error %></div>
           <br />
