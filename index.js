@@ -8,6 +8,8 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 
 const WELCOME_TITLES = ['Welcome back', 'Good to see you again', 'Hello there', 'Welcome', 'Hey, welcome'];
 
+const users = new Map();
+
 const app = new Hono();
 
 app.use(secureHeaders());
