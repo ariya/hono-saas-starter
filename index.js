@@ -64,6 +64,10 @@ function verifyCsrfToken(token) {
   return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
 }
 
+function clearSessionCookie() {
+  return 'session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax';
+}
+
 function renderSignIn(c, error) {
   const title = WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
   const csrf = generateCsrfToken();
@@ -145,6 +149,11 @@ app.get('/profile', (c) => {
   const email = getSessionEmail(c);
   if (!email) return c.redirect('/');
   return c.html(eta.render('profile', { email }));
+});
+
+app.post('/signout', (c) => {
+  c.header('Set-Cookie', clearSessionCookie());
+  return c.redirect('/');
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
