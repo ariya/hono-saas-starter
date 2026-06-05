@@ -35,12 +35,12 @@
 
 ## Security Audit — MEDIUM
 
-- [ ] Prevent user enumeration via registration error messages.
-- [ ] Replace synchronous scryptSync with async scrypt to avoid event loop blocking.
-- [ ] Enforce maximum password length to prevent scrypt DoS.
-- [ ] Add timing-safe user lookup on sign-in to prevent enumeration via response time.
+- [*] Prevent user enumeration via registration error messages.
+- [*] Replace synchronous scryptSync with async scrypt to avoid event loop blocking.
+- [*] Enforce maximum password length to prevent scrypt DoS.
+- [*] Add timing-safe user lookup on sign-in to prevent enumeration via response time.
 
 ## Security Audit — LOW
 
-- [ ] Require HMAC_SECRET env var in production (fail fast if missing).
-- [ ] Configure Content-Security-Policy header.
+- [*] Require HMAC_SECRET env var in production (fail fast if missing).
+- [*] Configure Content-Security-Policy header.

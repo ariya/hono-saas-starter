@@ -4,13 +4,15 @@ const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
 const path = require('path');
 const crypto = require('crypto');
+const { promisify } = require('util');
 
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 
 const WELCOME_TITLES = ['Welcome back', 'Good to see you again', 'Hello there', 'Welcome', 'Hey, welcome'];
 
-const HMAC_SECRET = process.env.HMAC_SECRET || crypto.randomBytes(32).toString('hex');
 const IS_PROD = process.env.NODE_ENV === 'production';
+const HMAC_SECRET = process.env.HMAC_SECRET || (IS_PROD ? null : crypto.randomBytes(32).toString('hex'));
+if (!HMAC_SECRET) throw new Error('HMAC_SECRET environment variable is required in production');
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const SCRYPT_KEYLEN = 64;
 const SCRYPT_COST = { N: 16384, r: 8, p: 1 };
@@ -21,13 +23,20 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000;
 const RATE_LIMIT_MAX = 20;
 const DUMMY_SALT = crypto.randomBytes(16).toString('hex');
-const DUMMY_HASH = hashPasswordRaw('dummy', DUMMY_SALT);
+const DUMMY_HASH = hashPasswordSync('dummy', DUMMY_SALT);
 
 const users = new Map();
 const rateLimits = new Map();
 
-function hashPasswordRaw(password, salt) {
+const scryptAsync = promisify(crypto.scrypt);
+
+function hashPasswordSync(password, salt) {
   return crypto.scryptSync(password, salt, SCRYPT_KEYLEN, SCRYPT_COST).toString('hex');
+}
+
+async function hashPassword(password, salt) {
+  const key = await scryptAsync(password, salt, SCRYPT_KEYLEN, SCRYPT_COST);
+  return key.toString('hex');
 }
 
 function safeCompare(a, b) {
@@ -120,7 +129,15 @@ function getClientIp(c) {
 
 const app = new Hono();
 
-app.use(secureHeaders());
+app.use(
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", 'https://unpkg.com'],
+      styleSrc: ["'self'", 'https://unpkg.com', "'unsafe-inline'"]
+    }
+  })
+);
 
 app.get('/', (c) => {
   if (getSessionEmail(c)) return c.redirect('/profile');
@@ -146,7 +163,7 @@ app.post('/', async (c) => {
   }
 
   const user = users.get(email);
-  const hash = user ? hashPasswordRaw(password, user.salt) : DUMMY_HASH;
+  const hash = user ? await hashPassword(password, user.salt) : DUMMY_HASH;
   const stored = user ? user.hash : DUMMY_HASH;
 
   if (!user || !safeCompare(hash, stored)) {
@@ -194,7 +211,7 @@ app.post('/register', async (c) => {
   }
 
   const salt = crypto.randomBytes(16).toString('hex');
-  const hash = hashPasswordRaw(password, salt);
+  const hash = await hashPassword(password, salt);
   users.set(email, { hash, salt });
 
   return c.redirect('/');
