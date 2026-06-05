@@ -31,11 +31,16 @@ function signSession(email) {
 
 function verifySession(token) {
   if (!token) return null;
-  const parts = token.split('.');
-  if (parts.length !== 3) return null;
-  const [email, ts, sig] = parts;
+  const lastDot = token.lastIndexOf('.');
+  if (lastDot === -1) return null;
+  const secondLastDot = token.lastIndexOf('.', lastDot - 1);
+  if (secondLastDot === -1) return null;
+  const email = token.slice(0, secondLastDot);
+  const ts = token.slice(secondLastDot + 1, lastDot);
+  const sig = token.slice(lastDot + 1);
   const payload = `${email}.${ts}`;
   const expected = crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('hex');
+  if (!/^[0-9a-f]+$/i.test(sig) || sig.length !== expected.length) return null;
   if (!crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) return null;
   if (Date.now() - Number(ts) > SESSION_MAX_AGE * 1000) return null;
   return email;
@@ -60,7 +65,7 @@ function verifyCsrfToken(token) {
   const nonce = token.slice(0, dot);
   const sig = token.slice(dot + 1);
   const expected = crypto.createHmac('sha256', HMAC_SECRET).update(nonce).digest('hex');
-  if (sig.length !== expected.length) return false;
+  if (!/^[0-9a-f]+$/i.test(sig) || sig.length !== expected.length) return false;
   return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
 }
 

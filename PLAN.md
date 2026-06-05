@@ -20,3 +20,27 @@
 - [*] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [*] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
 - [*] Implement the /signout handler to clear session cookies and redirect to the landing page.
+
+## Security Audit — CRITICAL
+
+- [*] Fix session token parsing: split('.') breaks for emails containing dots (app is non-functional).
+- [*] Fix timingSafeEqual crash on invalid hex input (remote DoS vector).
+
+## Security Audit — HIGH
+
+- [ ] Use timingSafeEqual for password hash comparison instead of !== operator.
+- [ ] Add CSRF protection to the /signout endpoint.
+- [ ] Add server-side email format validation on registration and sign-in.
+- [ ] Add rate limiting on authentication endpoints.
+
+## Security Audit — MEDIUM
+
+- [ ] Prevent user enumeration via registration error messages.
+- [ ] Replace synchronous scryptSync with async scrypt to avoid event loop blocking.
+- [ ] Enforce maximum password length to prevent scrypt DoS.
+- [ ] Add timing-safe user lookup on sign-in to prevent enumeration via response time.
+
+## Security Audit — LOW
+
+- [ ] Require HMAC_SECRET env var in production (fail fast if missing).
+- [ ] Configure Content-Security-Policy header.
