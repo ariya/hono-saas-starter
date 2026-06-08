@@ -18,4 +18,5 @@ See the following branches for how this starter kit was evolved:
 - with Kimi 2.6: [opencode/kimi-2.6](https://github.com/ariya/hono-saas-starter/tree/opencode/kimi-2.6) branch
 - with DeepSeek V4 Flash: [opencode/deepseek-v4-flash](https://github.com/ariya/hono-saas-starter/tree/opencode/deepseek-v4-flash) branch
 - with MiniMax M3: [opencode/minimax-m3](https://github.com/ariya/hono-saas-starter/tree/opencode/minimax-m3) branch
+- with Qwen 3.7 Max: [opencode/qwen-3.7-max](https://github.com/ariya/hono-saas-starter/tree/opencode/qwen-3.7-max) branch
 
