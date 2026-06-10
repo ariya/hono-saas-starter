@@ -104,7 +104,12 @@ const currentUser = (c) => {
 const renderSignIn = (data = {}) =>
   eta.render('signin', { title: pickWelcomeTitle(), error: null, csrfToken: createCsrfToken(), ...data });
 
-app.get('/', (c) => c.html(renderSignIn()));
+app.get('/', (c) => {
+  if (currentUser(c)) {
+    return c.redirect('/profile', 303);
+  }
+  return c.html(renderSignIn());
+});
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
