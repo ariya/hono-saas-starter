@@ -9,6 +9,7 @@ const app = new Hono();
 const eta = new Eta({ views: __dirname });
 
 const SESSION_TTL_SECONDS = 7 * 60 * 60;
+const isProduction = process.env.NODE_ENV === 'production';
 
 const users = new Map();
 
@@ -47,7 +48,7 @@ app.post('/signin', async (c) => {
   }
   setCookie(c, 'session', user.email, {
     httpOnly: true,
-    secure: true,
+    secure: isProduction,
     sameSite: 'Lax',
     path: '/',
     maxAge: SESSION_TTL_SECONDS
