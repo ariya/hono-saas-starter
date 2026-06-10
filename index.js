@@ -10,7 +10,12 @@ const eta = new Eta({ views: __dirname });
 
 const SESSION_TTL_SECONDS = 7 * 60 * 60;
 const isProduction = process.env.NODE_ENV === 'production';
-const hmacSecret = crypto.randomBytes(32);
+if (isProduction && !process.env.HMAC_SECRET) {
+  console.error('HMAC_SECRET environment variable is required in production');
+  process.exit(1);
+}
+
+const hmacSecret = process.env.HMAC_SECRET ? Buffer.from(process.env.HMAC_SECRET) : crypto.randomBytes(32);
 
 const sign = (value) => crypto.createHmac('sha256', hmacSecret).update(value).digest('base64url');
 
