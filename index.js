@@ -32,13 +32,15 @@ const welcomeTitles = ['Welcome', 'Welcome back', 'Good to see you', 'Hello agai
 
 const pickWelcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
-app.get('/', (c) => c.html(eta.render('signin', { title: pickWelcomeTitle() })));
+const renderSignIn = (data = {}) => eta.render('signin', { title: pickWelcomeTitle(), error: null, ...data });
+
+app.get('/', (c) => c.html(renderSignIn()));
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
   const user = verifyCredentials(body.email, body.password);
   if (!user) {
-    return c.text('Invalid email or password', 401);
+    return c.html(renderSignIn({ error: 'Invalid email or password.' }), 401);
   }
   return c.text('Signed in');
 });
