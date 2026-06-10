@@ -4,6 +4,7 @@ const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
 const crypto = require('node:crypto');
 const { deleteCookie, getCookie, setCookie } = require('hono/cookie');
+const { getConnInfo } = require('@hono/node-server/conninfo');
 
 const app = new Hono();
 const eta = new Eta({ views: __dirname });
@@ -71,6 +72,38 @@ const verifySessionToken = (token) => {
   return Buffer.from(encodedEmail, 'base64url').toString();
 };
 
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const RATE_LIMIT_MAX_ATTEMPTS = 20;
+const RATE_LIMIT_MAX_ENTRIES = 10000;
+
+const attemptLog = new Map();
+
+const isRateLimited = (key) => {
+  const now = Date.now();
+  if (attemptLog.size > RATE_LIMIT_MAX_ENTRIES) {
+    for (const [k, entry] of attemptLog) {
+      if (now - entry.start > RATE_LIMIT_WINDOW_MS) {
+        attemptLog.delete(k);
+      }
+    }
+  }
+  const entry = attemptLog.get(key);
+  if (!entry || now - entry.start > RATE_LIMIT_WINDOW_MS) {
+    attemptLog.set(key, { start: now, count: 1 });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > RATE_LIMIT_MAX_ATTEMPTS;
+};
+
+const clientKey = (c) => {
+  try {
+    return getConnInfo(c).remote.address || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+};
+
 const users = new Map();
 
 const saveUser = (email, passwordHash, salt) => {
@@ -112,6 +145,9 @@ app.get('/', (c) => {
 });
 
 app.post('/signin', async (c) => {
+  if (isRateLimited(clientKey(c))) {
+    return c.html(renderSignIn({ error: 'Too many attempts. Please try again later.' }), 429);
+  }
   const body = await c.req.parseBody();
   if (!verifyCsrfToken(body.csrf)) {
     return c.html(renderSignIn({ error: 'Your session expired. Please try again.' }), 403);
@@ -140,6 +176,9 @@ app.get('/register', (c) => {
 });
 
 app.post('/register', async (c) => {
+  if (isRateLimited(clientKey(c))) {
+    return c.html(renderRegister({ error: 'Too many attempts. Please try again later.' }), 429);
+  }
   const body = await c.req.parseBody();
   if (!verifyCsrfToken(body.csrf)) {
     return c.html(renderRegister({ error: 'Your session expired. Please try again.' }), 403);
