@@ -22,8 +22,20 @@ if (isProduction && Buffer.byteLength(process.env.HMAC_SECRET || '') < HMAC_SECR
 }
 
 const hmacSecret = process.env.HMAC_SECRET ? Buffer.from(process.env.HMAC_SECRET) : crypto.randomBytes(32);
+const previousHmacSecret = process.env.HMAC_SECRET_PREVIOUS ? Buffer.from(process.env.HMAC_SECRET_PREVIOUS) : null;
+const sessionNotBefore = Number(process.env.SESSION_NOT_BEFORE || 0);
 
-const sign = (value) => crypto.createHmac('sha256', hmacSecret).update(value).digest('base64url');
+const signWith = (secret, value) => crypto.createHmac('sha256', secret).update(value).digest('base64url');
+
+const sign = (value) => signWith(hmacSecret, value);
+
+const signatureMatches = (payload, signature) => {
+  const given = Buffer.from(signature);
+  return [hmacSecret, previousHmacSecret].filter(Boolean).some((secret) => {
+    const expected = signWith(secret, payload);
+    return given.length === Buffer.byteLength(expected) && crypto.timingSafeEqual(given, Buffer.from(expected));
+  });
+};
 
 const CSRF_TTL_SECONDS = 2 * 60 * 60;
 
@@ -53,17 +65,16 @@ const verifyCsrfToken = (c, token) => {
     return false;
   }
   const [expires, signature] = parts;
-  const expected = sign(`csrf.${csrfId}.${expires}`);
-  const given = Buffer.from(signature);
-  if (given.length !== Buffer.byteLength(expected) || !crypto.timingSafeEqual(given, Buffer.from(expected))) {
+  if (!signatureMatches(`csrf.${csrfId}.${expires}`, signature)) {
     return false;
   }
   return /^\d+$/.test(expires) && Number(expires) >= Date.now();
 };
 
 const createSessionToken = (email) => {
-  const expires = Date.now() + SESSION_TTL_SECONDS * 1000;
-  const payload = `${Buffer.from(email).toString('base64url')}.${expires}`;
+  const issuedAt = Date.now();
+  const expires = issuedAt + SESSION_TTL_SECONDS * 1000;
+  const payload = `${Buffer.from(email).toString('base64url')}.${issuedAt}.${expires}`;
   return `${payload}.${sign(payload)}`;
 };
 
@@ -72,17 +83,17 @@ const verifySessionToken = (token) => {
     return null;
   }
   const parts = token.split('.');
-  if (parts.length !== 3) {
+  if (parts.length !== 4) {
     return null;
   }
-  const [encodedEmail, expires, signature] = parts;
-  const payload = `${encodedEmail}.${expires}`;
-  const expected = sign(payload);
-  const given = Buffer.from(signature);
-  if (given.length !== Buffer.byteLength(expected) || !crypto.timingSafeEqual(given, Buffer.from(expected))) {
+  const [encodedEmail, issuedAt, expires, signature] = parts;
+  if (!signatureMatches(`${encodedEmail}.${issuedAt}.${expires}`, signature)) {
     return null;
   }
-  if (!/^\d+$/.test(expires) || Number(expires) < Date.now()) {
+  if (!/^\d+$/.test(issuedAt) || !/^\d+$/.test(expires)) {
+    return null;
+  }
+  if (Number(expires) < Date.now() || Number(issuedAt) < sessionNotBefore) {
     return null;
   }
   return Buffer.from(encodedEmail, 'base64url').toString();

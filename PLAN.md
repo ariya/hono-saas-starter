@@ -38,7 +38,7 @@
 
 ### Medium
 
-- [ ] Mitigate non-revocable stateless sessions: embed an issued-at claim and document HMAC secret rotation as the revocation path.
+- [x] Mitigate non-revocable stateless sessions: embed an issued-at claim and document HMAC secret rotation as the revocation path.
 - [ ] Avoid revealing account existence through the registration duplicate-email response.
 - [ ] Configure an explicit Content-Security-Policy via the secure headers middleware.
 
