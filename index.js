@@ -10,6 +10,36 @@ const eta = new Eta({ views: __dirname });
 
 const SESSION_TTL_SECONDS = 7 * 60 * 60;
 const isProduction = process.env.NODE_ENV === 'production';
+const hmacSecret = crypto.randomBytes(32);
+
+const sign = (value) => crypto.createHmac('sha256', hmacSecret).update(value).digest('base64url');
+
+const createSessionToken = (email) => {
+  const expires = Date.now() + SESSION_TTL_SECONDS * 1000;
+  const payload = `${Buffer.from(email).toString('base64url')}.${expires}`;
+  return `${payload}.${sign(payload)}`;
+};
+
+const verifySessionToken = (token) => {
+  if (typeof token !== 'string') {
+    return null;
+  }
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    return null;
+  }
+  const [encodedEmail, expires, signature] = parts;
+  const payload = `${encodedEmail}.${expires}`;
+  const expected = sign(payload);
+  const given = Buffer.from(signature);
+  if (given.length !== Buffer.byteLength(expected) || !crypto.timingSafeEqual(given, Buffer.from(expected))) {
+    return null;
+  }
+  if (!/^\d+$/.test(expires) || Number(expires) < Date.now()) {
+    return null;
+  }
+  return Buffer.from(encodedEmail, 'base64url').toString();
+};
 
 const users = new Map();
 
@@ -46,7 +76,7 @@ app.post('/signin', async (c) => {
   if (!user) {
     return c.html(renderSignIn({ error: 'Invalid email or password.' }), 401);
   }
-  setCookie(c, 'session', user.email, {
+  setCookie(c, 'session', createSessionToken(user.email), {
     httpOnly: true,
     secure: isProduction,
     sameSite: 'Lax',
