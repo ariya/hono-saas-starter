@@ -20,3 +20,30 @@
 - [x] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [x] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
 - [x] Implement the /signout handler to clear session cookies and redirect to the landing page.
+
+## Security Audit (2026-06-09)
+
+### Critical
+
+- [ ] Add per-IP rate limiting to the sign-in and registration handlers to block credential brute-forcing.
+- [ ] Cap email (254 chars) and password (128 chars) input lengths before hashing to prevent scrypt resource-exhaustion DoS.
+- [ ] Replace synchronous scrypt calls with the async variant so password hashing no longer blocks the event loop.
+- [ ] Enforce a minimum 32-byte HMAC_SECRET in production, refusing to start with a weak secret.
+
+### High
+
+- [ ] Bind CSRF tokens to a random pre-session cookie so attacker-minted tokens cannot be replayed (login CSRF).
+- [ ] Add a request body size limit to prevent memory-exhaustion DoS via large POST bodies.
+- [ ] Equalize sign-in timing by hashing against a dummy credential when the email is unknown (user enumeration).
+
+### Medium
+
+- [ ] Mitigate non-revocable stateless sessions: embed an issued-at claim and document HMAC secret rotation as the revocation path.
+- [ ] Avoid revealing account existence through the registration duplicate-email response.
+- [ ] Configure an explicit Content-Security-Policy via the secure headers middleware.
+
+### Low
+
+- [ ] Remove the server timestamp from the /health response.
+- [ ] Use the __Host- cookie name prefix for the session cookie in production.
+- [ ] Validate email format server-side during registration.
