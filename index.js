@@ -6,6 +6,14 @@ const { Eta } = require('eta');
 const app = new Hono();
 const eta = new Eta({ views: __dirname });
 
+const users = new Map();
+
+const saveUser = (email, passwordHash, salt) => {
+  users.set(email.toLowerCase(), { email: email.toLowerCase(), passwordHash, salt });
+};
+
+const findUser = (email) => users.get(String(email).toLowerCase());
+
 app.use(secureHeaders());
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Good to see you', 'Hello again', 'Great to have you here'];
