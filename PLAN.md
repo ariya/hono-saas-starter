@@ -26,7 +26,7 @@
 ### Critical
 
 - [x] Add per-IP rate limiting to the sign-in and registration handlers to block credential brute-forcing.
-- [ ] Cap email (254 chars) and password (128 chars) input lengths before hashing to prevent scrypt resource-exhaustion DoS.
+- [x] Cap email (254 chars) and password (128 chars) input lengths before hashing to prevent scrypt resource-exhaustion DoS.
 - [ ] Replace synchronous scrypt calls with the async variant so password hashing no longer blocks the event loop.
 - [ ] Enforce a minimum 32-byte HMAC_SECRET in production, refusing to start with a weak secret.
 

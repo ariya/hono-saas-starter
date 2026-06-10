@@ -112,6 +112,12 @@ const saveUser = (email, passwordHash, salt) => {
 
 const findUser = (email) => users.get(String(email).toLowerCase());
 
+const EMAIL_MAX_LENGTH = 254;
+const PASSWORD_MAX_LENGTH = 128;
+
+const withinInputLimits = (email, password) =>
+  email.length <= EMAIL_MAX_LENGTH && password.length <= PASSWORD_MAX_LENGTH;
+
 const hashPassword = (password, salt) => crypto.scryptSync(String(password), salt, 64);
 
 const verifyCredentials = (email, password) => {
@@ -152,7 +158,12 @@ app.post('/signin', async (c) => {
   if (!verifyCsrfToken(body.csrf)) {
     return c.html(renderSignIn({ error: 'Your session expired. Please try again.' }), 403);
   }
-  const user = verifyCredentials(body.email, body.password);
+  const email = String(body.email || '').trim();
+  const password = String(body.password || '');
+  if (!withinInputLimits(email, password)) {
+    return c.html(renderSignIn({ error: 'Invalid email or password.' }), 401);
+  }
+  const user = verifyCredentials(email, password);
   if (!user) {
     return c.html(renderSignIn({ error: 'Invalid email or password.' }), 401);
   }
@@ -187,6 +198,9 @@ app.post('/register', async (c) => {
   const password = String(body.password || '');
   if (!email) {
     return c.html(renderRegister({ error: 'Email is required.' }), 400);
+  }
+  if (!withinInputLimits(email, password)) {
+    return c.html(renderRegister({ error: 'Email or password is too long.' }), 400);
   }
   if (password.length < 8) {
     return c.html(renderRegister({ error: 'Password must be at least 8 characters long.' }), 400);
