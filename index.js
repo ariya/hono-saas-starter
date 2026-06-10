@@ -160,7 +160,20 @@ const verifyCredentials = async (email, password) => {
   return crypto.timingSafeEqual(candidate, user.passwordHash) ? user : null;
 };
 
-app.use(secureHeaders());
+app.use(
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", 'https://unpkg.com'],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:'],
+      formAction: ["'self'"],
+      baseUri: ["'self'"],
+      frameAncestors: ["'none'"],
+      objectSrc: ["'none'"]
+    }
+  })
+);
 
 app.use(
   bodyLimit({
