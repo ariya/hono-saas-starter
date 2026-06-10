@@ -1,6 +1,7 @@
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
+const { bodyLimit } = require('hono/body-limit');
 const { Eta } = require('eta');
 const crypto = require('node:crypto');
 const { promisify } = require('node:util');
@@ -147,6 +148,13 @@ const verifyCredentials = async (email, password) => {
 };
 
 app.use(secureHeaders());
+
+app.use(
+  bodyLimit({
+    maxSize: 16 * 1024,
+    onError: (c) => c.text('Request body too large', 413)
+  })
+);
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Good to see you', 'Hello again', 'Great to have you here'];
 

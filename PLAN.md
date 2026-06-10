@@ -33,7 +33,7 @@
 ### High
 
 - [x] Bind CSRF tokens to a random pre-session cookie so attacker-minted tokens cannot be replayed (login CSRF).
-- [ ] Add a request body size limit to prevent memory-exhaustion DoS via large POST bodies.
+- [x] Add a request body size limit to prevent memory-exhaustion DoS via large POST bodies.
 - [ ] Equalize sign-in timing by hashing against a dummy credential when the email is unknown (user enumeration).
 
 ### Medium
