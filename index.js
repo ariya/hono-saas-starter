@@ -3,7 +3,7 @@ const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
 const crypto = require('node:crypto');
-const { getCookie, setCookie } = require('hono/cookie');
+const { deleteCookie, getCookie, setCookie } = require('hono/cookie');
 
 const app = new Hono();
 const eta = new Eta({ views: __dirname });
@@ -166,6 +166,14 @@ app.get('/profile', (c) => {
     return c.redirect('/', 303);
   }
   return c.html(eta.render('profile', { email: user.email, csrfToken: createCsrfToken() }));
+});
+
+app.post('/signout', async (c) => {
+  const body = await c.req.parseBody();
+  if (verifyCsrfToken(body.csrf)) {
+    deleteCookie(c, 'session', { path: '/' });
+  }
+  return c.redirect('/', 303);
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
