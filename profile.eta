@@ -10,7 +10,12 @@
 <nav data-topnav>
 <div class="row">
 <div class="col-6"><strong><%= it.email %></strong></div>
-<div class="col-6 justify-end hstack"></div>
+<div class="col-6 justify-end hstack">
+<form method="post" action="/signout">
+<input type="hidden" name="csrf" value="<%= it.csrfToken %>">
+<button type="submit" class="outline small">Sign Out</button>
+</form>
+</div>
 </div>
 </nav>
 <main>
