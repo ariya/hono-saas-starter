@@ -244,11 +244,11 @@ app.post('/register', async (c) => {
   if (password.length < 8) {
     return c.html(renderRegister(c, { error: 'Password must be at least 8 characters long.' }), 400);
   }
-  if (findUser(email)) {
-    return c.html(renderRegister(c, { error: 'An account with this email already exists.' }), 409);
-  }
   const salt = crypto.randomBytes(16).toString('hex');
-  saveUser(email, await hashPassword(password, salt), salt);
+  const passwordHash = await hashPassword(password, salt);
+  if (!findUser(email)) {
+    saveUser(email, passwordHash, salt);
+  }
   return c.html(eta.render('registered', { email: email.toLowerCase() }));
 });
 

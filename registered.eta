@@ -10,8 +10,8 @@
 <body>
 <main>
 <article>
-<h1>Account created</h1>
-<p>Your account <strong><%= it.email %></strong> has been registered successfully.</p>
+<h1>Registration received</h1>
+<p>If <strong><%= it.email %></strong> was not already registered, your account is now ready.</p>
 <p>You will be redirected to the sign-in page shortly. <a href="/">Continue now</a>.</p>
 </article>
 </main>
