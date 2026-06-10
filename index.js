@@ -139,6 +139,22 @@ app.get('/register', (c) => {
   return c.html(renderRegister());
 });
 
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(body.csrf)) {
+    return c.html(renderRegister({ error: 'Your session expired. Please try again.' }), 403);
+  }
+  const email = String(body.email || '').trim();
+  const password = String(body.password || '');
+  if (!email) {
+    return c.html(renderRegister({ error: 'Email is required.' }), 400);
+  }
+  if (password.length < 8) {
+    return c.html(renderRegister({ error: 'Password must be at least 8 characters long.' }), 400);
+  }
+  return c.redirect('/', 303);
+});
+
 app.get('/profile', (c) => {
   const user = currentUser(c);
   if (!user) {
