@@ -3,6 +3,7 @@ const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
 const crypto = require('node:crypto');
+const { promisify } = require('node:util');
 const { deleteCookie, getCookie, setCookie } = require('hono/cookie');
 const { getConnInfo } = require('@hono/node-server/conninfo');
 
@@ -118,14 +119,16 @@ const PASSWORD_MAX_LENGTH = 128;
 const withinInputLimits = (email, password) =>
   email.length <= EMAIL_MAX_LENGTH && password.length <= PASSWORD_MAX_LENGTH;
 
-const hashPassword = (password, salt) => crypto.scryptSync(String(password), salt, 64);
+const scrypt = promisify(crypto.scrypt);
 
-const verifyCredentials = (email, password) => {
+const hashPassword = (password, salt) => scrypt(String(password), salt, 64);
+
+const verifyCredentials = async (email, password) => {
   const user = findUser(email);
   if (!user) {
     return null;
   }
-  const candidate = hashPassword(password, user.salt);
+  const candidate = await hashPassword(password, user.salt);
   return crypto.timingSafeEqual(candidate, user.passwordHash) ? user : null;
 };
 
@@ -163,7 +166,7 @@ app.post('/signin', async (c) => {
   if (!withinInputLimits(email, password)) {
     return c.html(renderSignIn({ error: 'Invalid email or password.' }), 401);
   }
-  const user = verifyCredentials(email, password);
+  const user = await verifyCredentials(email, password);
   if (!user) {
     return c.html(renderSignIn({ error: 'Invalid email or password.' }), 401);
   }
@@ -209,7 +212,7 @@ app.post('/register', async (c) => {
     return c.html(renderRegister({ error: 'An account with this email already exists.' }), 409);
   }
   const salt = crypto.randomBytes(16).toString('hex');
-  saveUser(email, hashPassword(password, salt), salt);
+  saveUser(email, await hashPassword(password, salt), salt);
   return c.html(eta.render('registered', { email: email.toLowerCase() }));
 });
 
