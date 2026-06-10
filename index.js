@@ -26,14 +26,25 @@ const sign = (value) => crypto.createHmac('sha256', hmacSecret).update(value).di
 
 const CSRF_TTL_SECONDS = 2 * 60 * 60;
 
-const createCsrfToken = () => {
-  const expires = Date.now() + CSRF_TTL_SECONDS * 1000;
-  const payload = `csrf.${expires}`;
-  return `${expires}.${sign(payload)}`;
+const ensureCsrfId = (c) => {
+  const existing = getCookie(c, 'csrf_id');
+  if (existing && /^[0-9a-f]{32}$/.test(existing)) {
+    return existing;
+  }
+  const id = crypto.randomBytes(16).toString('hex');
+  setCookie(c, 'csrf_id', id, { httpOnly: true, secure: isProduction, sameSite: 'Lax', path: '/' });
+  return id;
 };
 
-const verifyCsrfToken = (token) => {
-  if (typeof token !== 'string') {
+const createCsrfToken = (c) => {
+  const csrfId = ensureCsrfId(c);
+  const expires = Date.now() + CSRF_TTL_SECONDS * 1000;
+  return `${expires}.${sign(`csrf.${csrfId}.${expires}`)}`;
+};
+
+const verifyCsrfToken = (c, token) => {
+  const csrfId = getCookie(c, 'csrf_id');
+  if (!csrfId || !/^[0-9a-f]{32}$/.test(csrfId) || typeof token !== 'string') {
     return false;
   }
   const parts = token.split('.');
@@ -41,7 +52,7 @@ const verifyCsrfToken = (token) => {
     return false;
   }
   const [expires, signature] = parts;
-  const expected = sign(`csrf.${expires}`);
+  const expected = sign(`csrf.${csrfId}.${expires}`);
   const given = Buffer.from(signature);
   if (given.length !== Buffer.byteLength(expected) || !crypto.timingSafeEqual(given, Buffer.from(expected))) {
     return false;
@@ -146,32 +157,32 @@ const currentUser = (c) => {
   return email ? findUser(email) : null;
 };
 
-const renderSignIn = (data = {}) =>
-  eta.render('signin', { title: pickWelcomeTitle(), error: null, csrfToken: createCsrfToken(), ...data });
+const renderSignIn = (c, data = {}) =>
+  eta.render('signin', { title: pickWelcomeTitle(), error: null, csrfToken: createCsrfToken(c), ...data });
 
 app.get('/', (c) => {
   if (currentUser(c)) {
     return c.redirect('/profile', 303);
   }
-  return c.html(renderSignIn());
+  return c.html(renderSignIn(c));
 });
 
 app.post('/signin', async (c) => {
   if (isRateLimited(clientKey(c))) {
-    return c.html(renderSignIn({ error: 'Too many attempts. Please try again later.' }), 429);
+    return c.html(renderSignIn(c, { error: 'Too many attempts. Please try again later.' }), 429);
   }
   const body = await c.req.parseBody();
-  if (!verifyCsrfToken(body.csrf)) {
-    return c.html(renderSignIn({ error: 'Your session expired. Please try again.' }), 403);
+  if (!verifyCsrfToken(c, body.csrf)) {
+    return c.html(renderSignIn(c, { error: 'Your session expired. Please try again.' }), 403);
   }
   const email = String(body.email || '').trim();
   const password = String(body.password || '');
   if (!withinInputLimits(email, password)) {
-    return c.html(renderSignIn({ error: 'Invalid email or password.' }), 401);
+    return c.html(renderSignIn(c, { error: 'Invalid email or password.' }), 401);
   }
   const user = await verifyCredentials(email, password);
   if (!user) {
-    return c.html(renderSignIn({ error: 'Invalid email or password.' }), 401);
+    return c.html(renderSignIn(c, { error: 'Invalid email or password.' }), 401);
   }
   setCookie(c, 'session', createSessionToken(user.email), {
     httpOnly: true,
@@ -183,36 +194,37 @@ app.post('/signin', async (c) => {
   return c.redirect('/profile', 303);
 });
 
-const renderRegister = (data = {}) => eta.render('register', { error: null, csrfToken: createCsrfToken(), ...data });
+const renderRegister = (c, data = {}) =>
+  eta.render('register', { error: null, csrfToken: createCsrfToken(c), ...data });
 
 app.get('/register', (c) => {
   if (currentUser(c)) {
     return c.redirect('/profile', 303);
   }
-  return c.html(renderRegister());
+  return c.html(renderRegister(c));
 });
 
 app.post('/register', async (c) => {
   if (isRateLimited(clientKey(c))) {
-    return c.html(renderRegister({ error: 'Too many attempts. Please try again later.' }), 429);
+    return c.html(renderRegister(c, { error: 'Too many attempts. Please try again later.' }), 429);
   }
   const body = await c.req.parseBody();
-  if (!verifyCsrfToken(body.csrf)) {
-    return c.html(renderRegister({ error: 'Your session expired. Please try again.' }), 403);
+  if (!verifyCsrfToken(c, body.csrf)) {
+    return c.html(renderRegister(c, { error: 'Your session expired. Please try again.' }), 403);
   }
   const email = String(body.email || '').trim();
   const password = String(body.password || '');
   if (!email) {
-    return c.html(renderRegister({ error: 'Email is required.' }), 400);
+    return c.html(renderRegister(c, { error: 'Email is required.' }), 400);
   }
   if (!withinInputLimits(email, password)) {
-    return c.html(renderRegister({ error: 'Email or password is too long.' }), 400);
+    return c.html(renderRegister(c, { error: 'Email or password is too long.' }), 400);
   }
   if (password.length < 8) {
-    return c.html(renderRegister({ error: 'Password must be at least 8 characters long.' }), 400);
+    return c.html(renderRegister(c, { error: 'Password must be at least 8 characters long.' }), 400);
   }
   if (findUser(email)) {
-    return c.html(renderRegister({ error: 'An account with this email already exists.' }), 409);
+    return c.html(renderRegister(c, { error: 'An account with this email already exists.' }), 409);
   }
   const salt = crypto.randomBytes(16).toString('hex');
   saveUser(email, await hashPassword(password, salt), salt);
@@ -224,12 +236,12 @@ app.get('/profile', (c) => {
   if (!user) {
     return c.redirect('/', 303);
   }
-  return c.html(eta.render('profile', { email: user.email, csrfToken: createCsrfToken() }));
+  return c.html(eta.render('profile', { email: user.email, csrfToken: createCsrfToken(c) }));
 });
 
 app.post('/signout', async (c) => {
   const body = await c.req.parseBody();
-  if (verifyCsrfToken(body.csrf)) {
+  if (verifyCsrfToken(c, body.csrf)) {
     deleteCookie(c, 'session', { path: '/' });
   }
   return c.redirect('/', 303);
