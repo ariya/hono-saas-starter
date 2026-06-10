@@ -138,12 +138,14 @@ const scrypt = promisify(crypto.scrypt);
 
 const hashPassword = (password, salt) => scrypt(String(password), salt, 64);
 
+const dummySalt = crypto.randomBytes(16).toString('hex');
+
 const verifyCredentials = async (email, password) => {
   const user = findUser(email);
+  const candidate = await hashPassword(password, user ? user.salt : dummySalt);
   if (!user) {
     return null;
   }
-  const candidate = await hashPassword(password, user.salt);
   return crypto.timingSafeEqual(candidate, user.passwordHash) ? user : null;
 };
 
