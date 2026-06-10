@@ -8,6 +8,8 @@ const { setCookie } = require('hono/cookie');
 const app = new Hono();
 const eta = new Eta({ views: __dirname });
 
+const SESSION_TTL_SECONDS = 7 * 60 * 60;
+
 const users = new Map();
 
 const saveUser = (email, passwordHash, salt) => {
@@ -43,7 +45,13 @@ app.post('/signin', async (c) => {
   if (!user) {
     return c.html(renderSignIn({ error: 'Invalid email or password.' }), 401);
   }
-  setCookie(c, 'session', user.email, { httpOnly: true, sameSite: 'Lax', path: '/' });
+  setCookie(c, 'session', user.email, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: SESSION_TTL_SECONDS
+  });
   return c.redirect('/profile', 303);
 });
 
