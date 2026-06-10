@@ -130,6 +130,15 @@ app.post('/signin', async (c) => {
   return c.redirect('/profile', 303);
 });
 
+const renderRegister = (data = {}) => eta.render('register', { error: null, csrfToken: createCsrfToken(), ...data });
+
+app.get('/register', (c) => {
+  if (currentUser(c)) {
+    return c.redirect('/profile', 303);
+  }
+  return c.html(renderRegister());
+});
+
 app.get('/profile', (c) => {
   const user = currentUser(c);
   if (!user) {
