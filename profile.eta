@@ -7,10 +7,16 @@
 <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css">
 </head>
 <body>
+<nav data-topnav>
+<div class="row">
+<div class="col-6"><strong><%= it.email %></strong></div>
+<div class="col-6 justify-end hstack"></div>
+</div>
+</nav>
 <main>
 <article>
 <h1>Profile</h1>
-<p>You are signed in.</p>
+<p>Welcome to your dashboard.</p>
 </article>
 </main>
 </body>
