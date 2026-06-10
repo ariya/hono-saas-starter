@@ -3,7 +3,7 @@ const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
 const crypto = require('node:crypto');
-const { setCookie } = require('hono/cookie');
+const { getCookie, setCookie } = require('hono/cookie');
 
 const app = new Hono();
 const eta = new Eta({ views: __dirname });
@@ -96,6 +96,11 @@ const welcomeTitles = ['Welcome', 'Welcome back', 'Good to see you', 'Hello agai
 
 const pickWelcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
+const currentUser = (c) => {
+  const email = verifySessionToken(getCookie(c, 'session'));
+  return email ? findUser(email) : null;
+};
+
 const renderSignIn = (data = {}) =>
   eta.render('signin', { title: pickWelcomeTitle(), error: null, csrfToken: createCsrfToken(), ...data });
 
@@ -118,6 +123,14 @@ app.post('/signin', async (c) => {
     maxAge: SESSION_TTL_SECONDS
   });
   return c.redirect('/profile', 303);
+});
+
+app.get('/profile', (c) => {
+  const user = currentUser(c);
+  if (!user) {
+    return c.redirect('/', 303);
+  }
+  return c.html(eta.render('profile', { email: user.email }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
