@@ -19,6 +19,31 @@ const hmacSecret = process.env.HMAC_SECRET ? Buffer.from(process.env.HMAC_SECRET
 
 const sign = (value) => crypto.createHmac('sha256', hmacSecret).update(value).digest('base64url');
 
+const CSRF_TTL_SECONDS = 2 * 60 * 60;
+
+const createCsrfToken = () => {
+  const expires = Date.now() + CSRF_TTL_SECONDS * 1000;
+  const payload = `csrf.${expires}`;
+  return `${expires}.${sign(payload)}`;
+};
+
+const verifyCsrfToken = (token) => {
+  if (typeof token !== 'string') {
+    return false;
+  }
+  const parts = token.split('.');
+  if (parts.length !== 2) {
+    return false;
+  }
+  const [expires, signature] = parts;
+  const expected = sign(`csrf.${expires}`);
+  const given = Buffer.from(signature);
+  if (given.length !== Buffer.byteLength(expected) || !crypto.timingSafeEqual(given, Buffer.from(expected))) {
+    return false;
+  }
+  return /^\d+$/.test(expires) && Number(expires) >= Date.now();
+};
+
 const createSessionToken = (email) => {
   const expires = Date.now() + SESSION_TTL_SECONDS * 1000;
   const payload = `${Buffer.from(email).toString('base64url')}.${expires}`;
@@ -71,12 +96,16 @@ const welcomeTitles = ['Welcome', 'Welcome back', 'Good to see you', 'Hello agai
 
 const pickWelcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
-const renderSignIn = (data = {}) => eta.render('signin', { title: pickWelcomeTitle(), error: null, ...data });
+const renderSignIn = (data = {}) =>
+  eta.render('signin', { title: pickWelcomeTitle(), error: null, csrfToken: createCsrfToken(), ...data });
 
 app.get('/', (c) => c.html(renderSignIn()));
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
+  if (!verifyCsrfToken(body.csrf)) {
+    return c.html(renderSignIn({ error: 'Your session expired. Please try again.' }), 403);
+  }
   const user = verifyCredentials(body.email, body.password);
   if (!user) {
     return c.html(renderSignIn({ error: 'Invalid email or password.' }), 401);
