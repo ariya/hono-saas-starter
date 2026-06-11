@@ -8,6 +8,7 @@ const path = require('path');
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname) });
 const users = new Map();
+const sessionMaxAge = 7 * 60 * 60;
 const welcomeTitles = ['Welcome', 'Welcome back', 'Sign in to continue', 'Good to see you', 'Access your account'];
 
 const saveUser = ({ email, passwordHash, salt }) => {
@@ -41,7 +42,13 @@ app.post('/signin', async (c) => {
     return c.html(renderSignIn({ error: 'Invalid email or password.', email }), 401);
   }
 
-  setCookie(c, 'session', createSessionValue(user), { httpOnly: true, path: '/', sameSite: 'Lax' });
+  setCookie(c, 'session', createSessionValue(user), {
+    httpOnly: true,
+    maxAge: sessionMaxAge,
+    path: '/',
+    sameSite: 'Lax',
+    secure: true
+  });
   return c.redirect('/profile');
 });
 
