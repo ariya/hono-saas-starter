@@ -188,7 +188,7 @@ app.get('/profile', (c) => {
     return c.redirect('/');
   }
 
-  return c.html(render('profile.eta', { user }));
+  return c.html(render('profile.eta', { user, csrfToken: createCsrfToken() }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));

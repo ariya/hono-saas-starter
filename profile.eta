@@ -8,6 +8,10 @@
   <body>
     <nav class="container">
       <strong><%= it.user.email %></strong>
+      <form method="post" action="/signout">
+        <input type="hidden" name="csrfToken" value="<%= it.csrfToken %>" />
+        <button type="submit">Sign Out</button>
+      </form>
     </nav>
     <main class="container">
       <h1>Profile</h1>
