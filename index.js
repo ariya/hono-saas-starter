@@ -1,6 +1,6 @@
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
-const { setCookie } = require('hono/cookie');
+const { getCookie, setCookie } = require('hono/cookie');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
 const crypto = require('crypto');
@@ -100,6 +100,16 @@ const readSessionValue = (session) => {
   }
 };
 
+const getAuthenticatedUser = (c) => {
+  const session = readSessionValue(getCookie(c, 'session'));
+
+  if (!session) {
+    return null;
+  }
+
+  return findUser(session.email) || null;
+};
+
 app.use(secureHeaders());
 
 const render = (template, data = {}) => eta.render(template, data);
@@ -134,6 +144,16 @@ app.post('/signin', async (c) => {
     secure: secureCookies
   });
   return c.redirect('/profile');
+});
+
+app.get('/profile', (c) => {
+  const user = getAuthenticatedUser(c);
+
+  if (!user) {
+    return c.redirect('/');
+  }
+
+  return c.html(render('profile.eta', { user }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));

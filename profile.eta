@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@oat-css/oat@latest/oat.min.css" />
+    <title>Profile</title>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Profile</h1>
+    </main>
+  </body>
+</html>
