@@ -9,6 +9,7 @@ const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname) });
 const users = new Map();
 const sessionMaxAge = 7 * 60 * 60;
+const secureCookies = process.env.NODE_ENV !== 'development';
 const welcomeTitles = ['Welcome', 'Welcome back', 'Sign in to continue', 'Good to see you', 'Access your account'];
 
 const saveUser = ({ email, passwordHash, salt }) => {
@@ -47,7 +48,7 @@ app.post('/signin', async (c) => {
     maxAge: sessionMaxAge,
     path: '/',
     sameSite: 'Lax',
-    secure: true
+    secure: secureCookies
   });
   return c.redirect('/profile');
 });
