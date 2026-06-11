@@ -6,6 +6,9 @@
     <title>Profile</title>
   </head>
   <body>
+    <nav class="container">
+      <strong><%= it.user.email %></strong>
+    </nav>
     <main class="container">
       <h1>Profile</h1>
     </main>
