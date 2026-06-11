@@ -132,6 +132,22 @@ app.get('/', (c) => {
 
 app.get('/register', (c) => c.html(renderRegister()));
 
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  const email = String(body.email || '');
+  const password = String(body.password || '');
+
+  if (!verifyCsrfToken(body.csrfToken)) {
+    return c.html(renderRegister({ error: 'Your session expired. Please try again.', email }), 403);
+  }
+
+  if (password.length < 8) {
+    return c.html(renderRegister({ error: 'Password must be at least 8 characters.', email }), 400);
+  }
+
+  return c.text('Registration validated');
+});
+
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
   const email = String(body.email || '');
