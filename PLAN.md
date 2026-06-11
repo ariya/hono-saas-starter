@@ -20,3 +20,24 @@
 - [*] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [*] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
 - [*] Implement the /signout handler to clear session cookies and redirect to the landing page.
+
+## Security Audit: Critical
+
+- [ ] Enforce minimum entropy for `HMAC_SECRET` before signing cookies or CSRF tokens.
+
+## Security Audit: High
+
+- [ ] Add request throttling for authentication and registration endpoints to reduce brute-force risk.
+- [ ] Bind CSRF tokens to the intended action and authenticated user context so tokens cannot be reused across forms.
+
+## Security Audit: Medium
+
+- [ ] Pin the Oat.ink stylesheet to a fixed version and add an integrity check to reduce CDN supply-chain risk.
+- [ ] Replace duplicate-account registration errors with a generic response to reduce account enumeration.
+- [ ] Run a dummy password hash when sign-in email is unknown to reduce timing-based account enumeration.
+- [ ] Make CSRF tokens single-purpose and short-lived enough for state-changing form submissions.
+
+## Security Audit: Low
+
+- [ ] Validate email addresses on the server instead of relying on browser input validation.
+- [ ] Clear session cookies using the same security attributes used when setting them.
