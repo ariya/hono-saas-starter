@@ -15,6 +15,8 @@ const saveUser = ({ email, passwordHash, salt }) => {
 
 const findUser = (email) => users.get(email.toLowerCase());
 
+const verifyPassword = (password, user) => user.passwordHash === password;
+
 app.use(secureHeaders());
 
 const render = (template, data = {}) => eta.render(template, data);
@@ -22,6 +24,19 @@ const render = (template, data = {}) => eta.render(template, data);
 const randomWelcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
 app.get('/', (c) => c.html(render('sign-in.eta', { title: randomWelcomeTitle() })));
+
+app.post('/signin', async (c) => {
+  const body = await c.req.parseBody();
+  const email = String(body.email || '');
+  const password = String(body.password || '');
+  const user = findUser(email);
+
+  if (!user || !verifyPassword(password, user)) {
+    return c.text('Invalid email or password', 401);
+  }
+
+  return c.text('Signed in');
+});
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
