@@ -11,6 +11,7 @@ const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname) });
 const users = new Map();
 const sessionMaxAge = 7 * 60 * 60;
+const csrfMaxAge = 60 * 60;
 const secureCookies = process.env.NODE_ENV !== 'development';
 const hmacSecret = process.env.HMAC_SECRET;
 const scryptAsync = promisify(crypto.scrypt);
@@ -47,6 +48,30 @@ const verifyPassword = async (password, user) => {
 
 const signValue = (value) => crypto.createHmac('sha256', hmacSecret).update(value).digest('base64url');
 
+const createCsrfToken = () => {
+  const payload = Buffer.from(
+    JSON.stringify({ nonce: crypto.randomBytes(16).toString('base64url'), expiresAt: Date.now() + csrfMaxAge * 1000 })
+  ).toString('base64url');
+
+  return `${payload}.${signValue(payload)}`;
+};
+
+const verifyCsrfToken = (token) => {
+  const [payload, signature] = String(token || '').split('.');
+
+  if (!payload || !signature || !timingSafeEqual(signature, signValue(payload))) {
+    return false;
+  }
+
+  try {
+    const csrfData = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+
+    return Boolean(csrfData.nonce && Date.now() <= csrfData.expiresAt);
+  } catch {
+    return false;
+  }
+};
+
 const createSessionValue = (user) => {
   const payload = Buffer.from(
     JSON.stringify({ email: user.email, expiresAt: Date.now() + sessionMaxAge * 1000 })
@@ -82,7 +107,7 @@ const render = (template, data = {}) => eta.render(template, data);
 const randomWelcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
 const renderSignIn = (data = {}) =>
-  render('sign-in.eta', { title: randomWelcomeTitle(), error: '', email: '', ...data });
+  render('sign-in.eta', { title: randomWelcomeTitle(), error: '', email: '', csrfToken: createCsrfToken(), ...data });
 
 app.get('/', (c) => c.html(renderSignIn()));
 
@@ -90,6 +115,11 @@ app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
   const email = String(body.email || '');
   const password = String(body.password || '');
+
+  if (!verifyCsrfToken(body.csrfToken)) {
+    return c.html(renderSignIn({ error: 'Your session expired. Please try again.', email }), 403);
+  }
+
   const user = findUser(email);
 
   if (!user || !(await verifyPassword(password, user))) {
