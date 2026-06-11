@@ -1,5 +1,6 @@
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
+const { setCookie } = require('hono/cookie');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
 const path = require('path');
@@ -16,6 +17,8 @@ const saveUser = ({ email, passwordHash, salt }) => {
 const findUser = (email) => users.get(email.toLowerCase());
 
 const verifyPassword = (password, user) => user.passwordHash === password;
+
+const createSessionValue = (user) => Buffer.from(user.email).toString('base64url');
 
 app.use(secureHeaders());
 
@@ -38,7 +41,8 @@ app.post('/signin', async (c) => {
     return c.html(renderSignIn({ error: 'Invalid email or password.', email }), 401);
   }
 
-  return c.text('Signed in');
+  setCookie(c, 'session', createSessionValue(user), { httpOnly: true, path: '/', sameSite: 'Lax' });
+  return c.redirect('/profile');
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
