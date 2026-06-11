@@ -100,15 +100,20 @@ const verifyPassword = async (password, user) => {
 
 const signValue = (value) => crypto.createHmac('sha256', hmacSecret).update(value).digest('base64url');
 
-const createCsrfToken = () => {
+const createCsrfToken = (action, subject = '') => {
   const payload = Buffer.from(
-    JSON.stringify({ nonce: crypto.randomBytes(16).toString('base64url'), expiresAt: Date.now() + csrfMaxAge * 1000 })
+    JSON.stringify({
+      action,
+      subject,
+      nonce: crypto.randomBytes(16).toString('base64url'),
+      expiresAt: Date.now() + csrfMaxAge * 1000
+    })
   ).toString('base64url');
 
   return `${payload}.${signValue(payload)}`;
 };
 
-const verifyCsrfToken = (token) => {
+const verifyCsrfToken = (token, action, subject = '') => {
   const [payload, signature] = String(token || '').split('.');
 
   if (!payload || !signature || !timingSafeEqual(signature, signValue(payload))) {
@@ -118,7 +123,9 @@ const verifyCsrfToken = (token) => {
   try {
     const csrfData = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
 
-    return Boolean(csrfData.nonce && Date.now() <= csrfData.expiresAt);
+    return Boolean(
+      csrfData.action === action && csrfData.subject === subject && csrfData.nonce && Date.now() <= csrfData.expiresAt
+    );
   } catch {
     return false;
   }
@@ -169,10 +176,16 @@ const render = (template, data = {}) => eta.render(template, data);
 const randomWelcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
 const renderSignIn = (data = {}) =>
-  render('sign-in.eta', { title: randomWelcomeTitle(), error: '', email: '', csrfToken: createCsrfToken(), ...data });
+  render('sign-in.eta', {
+    title: randomWelcomeTitle(),
+    error: '',
+    email: '',
+    csrfToken: createCsrfToken('signin'),
+    ...data
+  });
 
 const renderRegister = (data = {}) =>
-  render('register.eta', { error: '', message: '', email: '', csrfToken: createCsrfToken(), ...data });
+  render('register.eta', { error: '', message: '', email: '', csrfToken: createCsrfToken('register'), ...data });
 
 app.get('/', (c) => {
   if (getAuthenticatedUser(c)) {
@@ -193,7 +206,7 @@ app.post('/register', async (c) => {
     return c.html(renderRegister({ error: 'Too many attempts. Please try again later.', email }), 429);
   }
 
-  if (!verifyCsrfToken(body.csrfToken)) {
+  if (!verifyCsrfToken(body.csrfToken, 'register')) {
     return c.html(renderRegister({ error: 'Your session expired. Please try again.', email }), 403);
   }
 
@@ -219,7 +232,7 @@ app.post('/signin', async (c) => {
     return c.html(renderSignIn({ error: 'Too many attempts. Please try again later.', email }), 429);
   }
 
-  if (!verifyCsrfToken(body.csrfToken)) {
+  if (!verifyCsrfToken(body.csrfToken, 'signin')) {
     return c.html(renderSignIn({ error: 'Your session expired. Please try again.', email }), 403);
   }
 
@@ -246,13 +259,14 @@ app.get('/profile', (c) => {
     return c.redirect('/');
   }
 
-  return c.html(render('profile.eta', { user, csrfToken: createCsrfToken() }));
+  return c.html(render('profile.eta', { user, csrfToken: createCsrfToken('signout', user.email) }));
 });
 
 app.post('/signout', async (c) => {
+  const user = getAuthenticatedUser(c);
   const body = await c.req.parseBody();
 
-  if (!verifyCsrfToken(body.csrfToken)) {
+  if (!user || !verifyCsrfToken(body.csrfToken, 'signout', user.email)) {
     return c.redirect('/profile');
   }
 
