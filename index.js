@@ -214,13 +214,14 @@ app.post('/register', async (c) => {
     return c.html(renderRegister({ error: 'Password must be at least 8 characters.', email }), 400);
   }
 
-  if (findUser(email)) {
-    return c.html(renderRegister({ error: 'An account already exists for that email.', email }), 409);
+  if (!findUser(email)) {
+    saveUser({ email, ...(await hashPassword(password)) });
   }
 
-  saveUser({ email, ...(await hashPassword(password)) });
-
-  return c.html(renderRegister({ message: 'Account created. Redirecting to sign in.', redirectTo: '/' }), 201);
+  return c.html(
+    renderRegister({ message: 'If registration can continue, you will be redirected to sign in.', redirectTo: '/' }),
+    201
+  );
 });
 
 app.post('/signin', async (c) => {
