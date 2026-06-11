@@ -2,6 +2,9 @@
 <html lang="en">
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <% if (it.redirectTo) { %>
+    <meta http-equiv="refresh" content="2;url=<%= it.redirectTo %>" />
+    <% } %>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@oat-css/oat@latest/oat.min.css" />
     <title>Register</title>
   </head>

@@ -22,10 +22,12 @@ if (!hmacSecret) {
 }
 
 const saveUser = ({ email, passwordHash, salt }) => {
-  users.set(email.toLowerCase(), { email, passwordHash, salt });
+  const normalizedEmail = email.trim().toLowerCase();
+
+  users.set(normalizedEmail, { email: normalizedEmail, passwordHash, salt });
 };
 
-const findUser = (email) => users.get(email.toLowerCase());
+const findUser = (email) => users.get(email.trim().toLowerCase());
 
 const hashPassword = async (password, salt = crypto.randomBytes(16).toString('base64url')) => {
   const hash = await scryptAsync(password, salt, 64);
@@ -134,7 +136,7 @@ app.get('/register', (c) => c.html(renderRegister()));
 
 app.post('/register', async (c) => {
   const body = await c.req.parseBody();
-  const email = String(body.email || '');
+  const email = String(body.email || '').trim();
   const password = String(body.password || '');
 
   if (!verifyCsrfToken(body.csrfToken)) {
@@ -145,12 +147,18 @@ app.post('/register', async (c) => {
     return c.html(renderRegister({ error: 'Password must be at least 8 characters.', email }), 400);
   }
 
-  return c.text('Registration validated');
+  if (findUser(email)) {
+    return c.html(renderRegister({ error: 'An account already exists for that email.', email }), 409);
+  }
+
+  saveUser({ email, ...(await hashPassword(password)) });
+
+  return c.html(renderRegister({ message: 'Account created. Redirecting to sign in.', redirectTo: '/' }), 201);
 });
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
-  const email = String(body.email || '');
+  const email = String(body.email || '').trim();
   const password = String(body.password || '');
 
   if (!verifyCsrfToken(body.csrfToken)) {
