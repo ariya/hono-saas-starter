@@ -119,7 +119,13 @@ const randomWelcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcom
 const renderSignIn = (data = {}) =>
   render('sign-in.eta', { title: randomWelcomeTitle(), error: '', email: '', csrfToken: createCsrfToken(), ...data });
 
-app.get('/', (c) => c.html(renderSignIn()));
+app.get('/', (c) => {
+  if (getAuthenticatedUser(c)) {
+    return c.redirect('/profile');
+  }
+
+  return c.html(renderSignIn());
+});
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
