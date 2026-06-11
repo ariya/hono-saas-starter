@@ -5,7 +5,12 @@
     <% if (it.redirectTo) { %>
     <meta http-equiv="refresh" content="2;url=<%= it.redirectTo %>" />
     <% } %>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@oat-css/oat@latest/oat.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@knadh/oat@0.6.1/oat.min.css"
+      integrity="sha384-Og/V0L/W2NTx/MFghQT69RgjpXeYmxarXb64BwF/k92HSjxGWFo6GT1/weuT7qWA"
+      crossorigin="anonymous"
+    />
     <title>Register</title>
   </head>
   <body>

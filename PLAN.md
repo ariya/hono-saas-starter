@@ -32,7 +32,7 @@
 
 ## Security Audit: Medium
 
-- [ ] Pin the Oat.ink stylesheet to a fixed version and add an integrity check to reduce CDN supply-chain risk.
+- [*] Pin the Oat.ink stylesheet to a fixed version and add an integrity check to reduce CDN supply-chain risk.
 - [ ] Replace duplicate-account registration errors with a generic response to reduce account enumeration.
 - [ ] Run a dummy password hash when sign-in email is unknown to reduce timing-based account enumeration.
 - [ ] Make CSRF tokens single-purpose and short-lived enough for state-changing form submissions.
