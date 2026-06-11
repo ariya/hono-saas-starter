@@ -6,7 +6,14 @@ const path = require('path');
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname) });
+const users = new Map();
 const welcomeTitles = ['Welcome', 'Welcome back', 'Sign in to continue', 'Good to see you', 'Access your account'];
+
+const saveUser = ({ email, passwordHash, salt }) => {
+  users.set(email.toLowerCase(), { email, passwordHash, salt });
+};
+
+const findUser = (email) => users.get(email.toLowerCase());
 
 app.use(secureHeaders());
 
