@@ -6,12 +6,15 @@ const path = require('path');
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname) });
+const welcomeTitles = ['Welcome', 'Welcome back', 'Sign in to continue', 'Good to see you', 'Access your account'];
 
 app.use(secureHeaders());
 
 const render = (template, data = {}) => eta.render(template, data);
 
-app.get('/', (c) => c.html(render('sign-in.eta')));
+const randomWelcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
+
+app.get('/', (c) => c.html(render('sign-in.eta', { title: randomWelcomeTitle() })));
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
