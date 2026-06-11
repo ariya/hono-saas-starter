@@ -22,6 +22,7 @@
           <input type="password" name="password" autocomplete="current-password" required />
         </label>
         <button type="submit">Sign In</button>
+        <p><a href="/register">Register for account</a></p>
       </form>
     </main>
   </body>
