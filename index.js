@@ -12,9 +12,13 @@ const eta = new Eta({ views: path.join(__dirname) });
 const users = new Map();
 const sessionMaxAge = 7 * 60 * 60;
 const secureCookies = process.env.NODE_ENV !== 'development';
-const hmacSecret = process.env.HMAC_SECRET || 'development-secret';
+const hmacSecret = process.env.HMAC_SECRET;
 const scryptAsync = promisify(crypto.scrypt);
 const welcomeTitles = ['Welcome', 'Welcome back', 'Sign in to continue', 'Good to see you', 'Access your account'];
+
+if (!hmacSecret) {
+  throw new Error('HMAC_SECRET is required');
+}
 
 const saveUser = ({ email, passwordHash, salt }) => {
   users.set(email.toLowerCase(), { email, passwordHash, salt });

@@ -9,7 +9,7 @@
 - [*] Configure session cookies with the Secure flag and a 7-hour expiration.
 - [*] Implement conditional logic to disable the Secure flag during local development.
 - [*] Use scrypt for password hashing and HMAC for session cookie validation.
-- [ ] Secure the HMAC secret, retrieve from the `HMAC_SECRET` env.
+- [*] Secure the HMAC secret, retrieve from the `HMAC_SECRET` env.
 - [ ] Implement CSRF protection using an HMAC-signed token, passed via a hidden input field.
 - [ ] Build the /profile route with session validation; redirect unauthenticated users to /.
 - [ ] Update the landing page to auto-redirect active sessions to /profile.
