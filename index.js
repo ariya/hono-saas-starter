@@ -18,6 +18,8 @@ const throttleMaxAttempts = 10;
 const secureCookies = process.env.NODE_ENV !== 'development';
 const hmacSecret = process.env.HMAC_SECRET;
 const scryptAsync = promisify(crypto.scrypt);
+const dummyPasswordHash = 'NxMUhF5J73aEZHmWUlgDtH-kd6TJmVWF8vbK0rSIE9L6I6lgbOwuHiMSa9jrNP2H5l0CV7tBGuICMFDdFxHvkQ';
+const dummyPasswordSalt = 'dummy-password-salt';
 const welcomeTitles = ['Welcome', 'Welcome back', 'Sign in to continue', 'Good to see you', 'Access your account'];
 
 const shannonEntropyBits = (value) => {
@@ -96,6 +98,10 @@ const verifyPassword = async (password, user) => {
   const { passwordHash } = await hashPassword(password, user.salt);
 
   return timingSafeEqual(passwordHash, user.passwordHash);
+};
+
+const verifyUnknownPassword = async (password) => {
+  await verifyPassword(password, { passwordHash: dummyPasswordHash, salt: dummyPasswordSalt });
 };
 
 const signValue = (value) => crypto.createHmac('sha256', hmacSecret).update(value).digest('base64url');
@@ -238,8 +244,13 @@ app.post('/signin', async (c) => {
   }
 
   const user = findUser(email);
+  const passwordValid = user ? await verifyPassword(password, user) : false;
 
-  if (!user || !(await verifyPassword(password, user))) {
+  if (!user) {
+    await verifyUnknownPassword(password);
+  }
+
+  if (!user || !passwordValid) {
     return c.html(renderSignIn({ error: 'Invalid email or password.', email }), 401);
   }
 
