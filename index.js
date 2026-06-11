@@ -11,8 +11,9 @@ const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname) });
 const users = new Map();
 const authAttempts = new Map();
+const csrfNonces = new Map();
 const sessionMaxAge = 7 * 60 * 60;
-const csrfMaxAge = 60 * 60;
+const csrfMaxAge = 10 * 60;
 const throttleWindowMs = 15 * 60 * 1000;
 const throttleMaxAttempts = 10;
 const secureCookies = process.env.NODE_ENV !== 'development';
@@ -107,16 +108,39 @@ const verifyUnknownPassword = async (password) => {
 const signValue = (value) => crypto.createHmac('sha256', hmacSecret).update(value).digest('base64url');
 
 const createCsrfToken = (action, subject = '') => {
+  const nonce = crypto.randomBytes(16).toString('base64url');
+  const expiresAt = Date.now() + csrfMaxAge * 1000;
+
+  csrfNonces.set(nonce, expiresAt);
+
   const payload = Buffer.from(
     JSON.stringify({
       action,
       subject,
-      nonce: crypto.randomBytes(16).toString('base64url'),
-      expiresAt: Date.now() + csrfMaxAge * 1000
+      nonce,
+      expiresAt
     })
   ).toString('base64url');
 
   return `${payload}.${signValue(payload)}`;
+};
+
+const consumeCsrfNonce = (nonce, expiresAt) => {
+  const storedExpiresAt = csrfNonces.get(nonce);
+
+  if (!storedExpiresAt || storedExpiresAt !== expiresAt || Date.now() > storedExpiresAt) {
+    return false;
+  }
+
+  csrfNonces.delete(nonce);
+
+  for (const [storedNonce, storedExpiry] of csrfNonces) {
+    if (Date.now() > storedExpiry) {
+      csrfNonces.delete(storedNonce);
+    }
+  }
+
+  return true;
 };
 
 const verifyCsrfToken = (token, action, subject = '') => {
@@ -130,7 +154,11 @@ const verifyCsrfToken = (token, action, subject = '') => {
     const csrfData = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
 
     return Boolean(
-      csrfData.action === action && csrfData.subject === subject && csrfData.nonce && Date.now() <= csrfData.expiresAt
+      csrfData.action === action &&
+      csrfData.subject === subject &&
+      csrfData.nonce &&
+      Date.now() <= csrfData.expiresAt &&
+      consumeCsrfNonce(csrfData.nonce, csrfData.expiresAt)
     );
   } catch {
     return false;
