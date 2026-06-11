@@ -119,6 +119,9 @@ const randomWelcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcom
 const renderSignIn = (data = {}) =>
   render('sign-in.eta', { title: randomWelcomeTitle(), error: '', email: '', csrfToken: createCsrfToken(), ...data });
 
+const renderRegister = (data = {}) =>
+  render('register.eta', { error: '', message: '', email: '', csrfToken: createCsrfToken(), ...data });
+
 app.get('/', (c) => {
   if (getAuthenticatedUser(c)) {
     return c.redirect('/profile');
@@ -126,6 +129,8 @@ app.get('/', (c) => {
 
   return c.html(renderSignIn());
 });
+
+app.get('/register', (c) => c.html(renderRegister()));
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();

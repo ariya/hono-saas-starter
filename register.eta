@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@oat-css/oat@latest/oat.min.css" />
+    <title>Register</title>
+  </head>
+  <body>
+    <main class="container">
+      <form method="post" action="/register">
+        <h1>Register</h1>
+        <% if (it.message) { %>
+        <p><%= it.message %></p>
+        <% } %> <% if (it.error) { %>
+        <p role="alert"><%= it.error %></p>
+        <% } %>
+        <input type="hidden" name="csrfToken" value="<%= it.csrfToken %>" />
+        <label>
+          Email
+          <input type="email" name="email" value="<%= it.email %>" autocomplete="email" required />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" autocomplete="new-password" required />
+        </label>
+        <button type="submit">Register</button>
+        <p><a href="/">Sign in</a></p>
+      </form>
+    </main>
+  </body>
+</html>
