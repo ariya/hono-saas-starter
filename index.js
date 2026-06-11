@@ -17,9 +17,27 @@ const hmacSecret = process.env.HMAC_SECRET;
 const scryptAsync = promisify(crypto.scrypt);
 const welcomeTitles = ['Welcome', 'Welcome back', 'Sign in to continue', 'Good to see you', 'Access your account'];
 
-if (!hmacSecret) {
-  throw new Error('HMAC_SECRET is required');
-}
+const shannonEntropyBits = (value) => {
+  const counts = new Map();
+
+  for (const character of value) {
+    counts.set(character, (counts.get(character) || 0) + 1);
+  }
+
+  return [...counts.values()].reduce((entropy, count) => {
+    const probability = count / value.length;
+
+    return entropy - probability * Math.log2(probability) * value.length;
+  }, 0);
+};
+
+const validateHmacSecret = (secret) => {
+  if (!secret || Buffer.byteLength(secret, 'utf8') < 32 || shannonEntropyBits(secret) < 128) {
+    throw new Error('HMAC_SECRET must contain at least 32 bytes and 128 bits of estimated entropy');
+  }
+};
+
+validateHmacSecret(hmacSecret);
 
 const saveUser = ({ email, passwordHash, salt }) => {
   const normalizedEmail = email.trim().toLowerCase();

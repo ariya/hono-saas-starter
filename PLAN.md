@@ -23,7 +23,7 @@
 
 ## Security Audit: Critical
 
-- [ ] Enforce minimum entropy for `HMAC_SECRET` before signing cookies or CSRF tokens.
+- [*] Enforce minimum entropy for `HMAC_SECRET` before signing cookies or CSRF tokens.
 
 ## Security Audit: High
 
