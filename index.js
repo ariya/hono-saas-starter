@@ -23,7 +23,10 @@ const render = (template, data = {}) => eta.render(template, data);
 
 const randomWelcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
-app.get('/', (c) => c.html(render('sign-in.eta', { title: randomWelcomeTitle() })));
+const renderSignIn = (data = {}) =>
+  render('sign-in.eta', { title: randomWelcomeTitle(), error: '', email: '', ...data });
+
+app.get('/', (c) => c.html(renderSignIn()));
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
@@ -32,7 +35,7 @@ app.post('/signin', async (c) => {
   const user = findUser(email);
 
   if (!user || !verifyPassword(password, user)) {
-    return c.text('Invalid email or password', 401);
+    return c.html(renderSignIn({ error: 'Invalid email or password.', email }), 401);
   }
 
   return c.text('Signed in');
