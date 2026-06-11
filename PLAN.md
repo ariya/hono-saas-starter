@@ -27,7 +27,7 @@
 
 ## Security Audit: High
 
-- [ ] Add request throttling for authentication and registration endpoints to reduce brute-force risk.
+- [*] Add request throttling for authentication and registration endpoints to reduce brute-force risk.
 - [ ] Bind CSRF tokens to the intended action and authenticated user context so tokens cannot be reused across forms.
 
 ## Security Audit: Medium

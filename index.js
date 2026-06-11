@@ -10,8 +10,11 @@ const { promisify } = require('util');
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname) });
 const users = new Map();
+const authAttempts = new Map();
 const sessionMaxAge = 7 * 60 * 60;
 const csrfMaxAge = 60 * 60;
+const throttleWindowMs = 15 * 60 * 1000;
+const throttleMaxAttempts = 10;
 const secureCookies = process.env.NODE_ENV !== 'development';
 const hmacSecret = process.env.HMAC_SECRET;
 const scryptAsync = promisify(crypto.scrypt);
@@ -46,6 +49,35 @@ const saveUser = ({ email, passwordHash, salt }) => {
 };
 
 const findUser = (email) => users.get(email.trim().toLowerCase());
+
+const normalizeEmail = (email) => email.trim().toLowerCase();
+
+const getClientAddress = (c) => {
+  const forwardedFor = c.req.header('x-forwarded-for');
+
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+
+  return c.req.header('cf-connecting-ip') || c.req.header('x-real-ip') || 'unknown';
+};
+
+const throttleKey = (c, route, email) => `${route}:${getClientAddress(c)}:${normalizeEmail(email)}`;
+
+const isThrottled = (c, route, email) => {
+  const now = Date.now();
+  const key = throttleKey(c, route, email);
+  const attempt = authAttempts.get(key);
+
+  if (!attempt || now > attempt.resetAt) {
+    authAttempts.set(key, { count: 1, resetAt: now + throttleWindowMs });
+    return false;
+  }
+
+  attempt.count += 1;
+
+  return attempt.count > throttleMaxAttempts;
+};
 
 const hashPassword = async (password, salt = crypto.randomBytes(16).toString('base64url')) => {
   const hash = await scryptAsync(password, salt, 64);
@@ -157,6 +189,10 @@ app.post('/register', async (c) => {
   const email = String(body.email || '').trim();
   const password = String(body.password || '');
 
+  if (isThrottled(c, 'register', email)) {
+    return c.html(renderRegister({ error: 'Too many attempts. Please try again later.', email }), 429);
+  }
+
   if (!verifyCsrfToken(body.csrfToken)) {
     return c.html(renderRegister({ error: 'Your session expired. Please try again.', email }), 403);
   }
@@ -178,6 +214,10 @@ app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
   const email = String(body.email || '').trim();
   const password = String(body.password || '');
+
+  if (isThrottled(c, 'signin', email)) {
+    return c.html(renderSignIn({ error: 'Too many attempts. Please try again later.', email }), 429);
+  }
 
   if (!verifyCsrfToken(body.csrfToken)) {
     return c.html(renderSignIn({ error: 'Your session expired. Please try again.', email }), 403);
