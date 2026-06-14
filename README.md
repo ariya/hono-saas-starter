@@ -13,6 +13,7 @@ npm start
 See the following branches for how this starter kit was evolved:
 
 - with DeepSeek V4 Flash: [opencode/deepseek-v4-flash](https://github.com/ariya/hono-saas-starter/tree/opencode/deepseek-v4-flash)
+- with Fable 5: [claude-code/fable-5](https://github.com/ariya/hono-saas-starter/tree/claude-code/fable-5)
 - with Gemini 3.5 Flash: [antigravity/gemini-3.5-flash](https://github.com/ariya/hono-saas-starter/tree/antigravity/gemini-3.5-flash)
 - with GPT 5.5: [codex/gpt-5.5](https://github.com/ariya/hono-saas-starter/tree/codex/gpt-5.5)
 - with Kimi 2.6: [opencode/kimi-2.6](https://github.com/ariya/hono-saas-starter/tree/opencode/kimi-2.6)
