@@ -88,6 +88,10 @@ const renderRegister = (data) => {
   return eta.render('register', { csrfToken: createCsrfToken(), ...data });
 };
 
+const renderProfile = (data) => {
+  return eta.render('profile', { csrfToken: createCsrfToken(), ...data });
+};
+
 app.get('/', async (c) => {
   const user = await getCurrentUser(c);
   if (user) return c.redirect('/profile');
@@ -140,7 +144,7 @@ app.post('/signin', csrfGuard, async (c) => {
 app.get('/profile', async (c) => {
   const user = await getCurrentUser(c);
   if (!user) return c.redirect('/');
-  return c.html(eta.render('profile', { email: user.email }));
+  return c.html(renderProfile({ email: user.email }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
