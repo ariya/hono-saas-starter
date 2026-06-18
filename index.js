@@ -100,6 +100,21 @@ app.get('/register', async (c) => {
   return c.html(renderRegister({}));
 });
 
+const MIN_PASSWORD_LENGTH = 8;
+
+app.post('/register', csrfGuard, async (c) => {
+  const body = await c.req.parseBody();
+  const email = String(body.email || '').toLowerCase();
+  const password = String(body.password || '');
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return c.html(
+      renderRegister({ email, error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.` }),
+      400
+    );
+  }
+  return c.html(renderRegister({}));
+});
+
 app.post('/signin', csrfGuard, async (c) => {
   const body = await c.req.parseBody();
   const email = String(body.email || '').toLowerCase();
