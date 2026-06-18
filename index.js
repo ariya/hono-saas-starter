@@ -6,12 +6,15 @@ const path = require('node:path');
 
 const eta = new Eta({ views: path.join(__dirname, 'views'), cache: false });
 
+const WELCOME_TITLES = ['Welcome back', 'Hello again', 'Good to see you', 'We missed you', 'Glad you are here'];
+
 const app = new Hono();
 
 app.use(secureHeaders());
 
 app.get('/', (c) => {
-  return c.html(eta.render('signin', {}));
+  const welcome = WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
+  return c.html(eta.render('signin', { welcome }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
