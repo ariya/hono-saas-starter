@@ -38,6 +38,21 @@ app.get('/', (c) => {
   return c.html(eta.render('signin', { welcome }));
 });
 
+const verifyPassword = (password, user) => {
+  return user.passwordHash === hashPassword(password, user.salt);
+};
+
+app.post('/signin', async (c) => {
+  const body = await c.req.parseBody();
+  const email = String(body.email || '').toLowerCase();
+  const password = String(body.password || '');
+  const user = findUser(email);
+  if (!user || !verifyPassword(password, user)) {
+    return c.text('Invalid email or password', 401);
+  }
+  return c.text('Signed in');
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
