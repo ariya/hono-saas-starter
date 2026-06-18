@@ -23,6 +23,7 @@
         </label>
         <button type="submit">Sign In</button>
       </form>
+      <p><a href="/register">Register for account</a></p>
     </main>
   </body>
 </html>
