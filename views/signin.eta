@@ -8,10 +8,13 @@
   <body>
     <main>
       <h1><%= it.welcome %></h1>
+      <% if (it.error) { %>
+      <p role="alert"><%= it.error %></p>
+      <% } %>
       <form method="POST" action="/signin">
         <label>
           Email
-          <input type="email" name="email" required />
+          <input type="email" name="email" value="<%= it.email || '' %>" required />
         </label>
         <label>
           Password

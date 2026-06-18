@@ -27,20 +27,24 @@ const createUser = (email, password) => {
 
 const findUser = (email) => users.get(email);
 
+const verifyPassword = (password, user) => {
+  return user.passwordHash === hashPassword(password, user.salt);
+};
+
 createUser('demo@example.com', 'password123456');
 
 const app = new Hono();
 
 app.use(secureHeaders());
 
-app.get('/', (c) => {
-  const welcome = WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
-  return c.html(eta.render('signin', { welcome }));
-});
-
-const verifyPassword = (password, user) => {
-  return user.passwordHash === hashPassword(password, user.salt);
+const renderSignin = (data) => {
+  const welcome = data.welcome || WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
+  return eta.render('signin', { welcome, ...data });
 };
+
+app.get('/', (c) => {
+  return c.html(renderSignin({}));
+});
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
@@ -48,7 +52,7 @@ app.post('/signin', async (c) => {
   const password = String(body.password || '');
   const user = findUser(email);
   if (!user || !verifyPassword(password, user)) {
-    return c.text('Invalid email or password', 401);
+    return c.html(renderSignin({ email, error: 'Invalid email or password.' }), 401);
   }
   return c.text('Signed in');
 });
