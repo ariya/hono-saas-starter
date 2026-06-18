@@ -1,6 +1,7 @@
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
+const { bodyLimit } = require('hono/body-limit');
 const { getCookie, getSignedCookie, setCookie, setSignedCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 const path = require('node:path');
@@ -100,6 +101,7 @@ createUser('demo@example.com', 'password123456');
 const app = new Hono();
 
 app.use(secureHeaders());
+app.use(bodyLimit({ maxSize: 16 * 1024 }));
 
 const renderSignin = (data) => {
   const welcome = data.welcome || WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
@@ -127,6 +129,7 @@ app.get('/register', async (c) => {
 });
 
 const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 1024;
 
 app.post('/register', csrfGuard, async (c) => {
   const body = await c.req.parseBody();
@@ -135,6 +138,12 @@ app.post('/register', csrfGuard, async (c) => {
   if (password.length < MIN_PASSWORD_LENGTH) {
     return c.html(
       renderRegister({ email, error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.` }),
+      400
+    );
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return c.html(
+      renderRegister({ email, error: `Password must be at most ${MAX_PASSWORD_LENGTH} characters long.` }),
       400
     );
   }
@@ -155,6 +164,9 @@ app.post('/signin', csrfGuard, async (c) => {
   }
   recordAttempt(`ip:${ip}`);
   recordAttempt(`email:${email}`);
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return c.html(renderSignin({ email, error: 'Invalid email or password.' }), 401);
+  }
   const existing = findUser(email);
   const user = existing || DUMMY_USER;
   const valid = verifyPassword(password, user);
