@@ -84,10 +84,20 @@ const renderSignin = (data) => {
   return eta.render('signin', { csrfToken: createCsrfToken(), welcome, ...data });
 };
 
+const renderRegister = (data) => {
+  return eta.render('register', { csrfToken: createCsrfToken(), ...data });
+};
+
 app.get('/', async (c) => {
   const user = await getCurrentUser(c);
   if (user) return c.redirect('/profile');
   return c.html(renderSignin({}));
+});
+
+app.get('/register', async (c) => {
+  const user = await getCurrentUser(c);
+  if (user) return c.redirect('/profile');
+  return c.html(renderRegister({}));
 });
 
 app.post('/signin', csrfGuard, async (c) => {
