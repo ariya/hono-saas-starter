@@ -179,10 +179,12 @@ app.post('/register', csrfGuard, async (c) => {
       400
     );
   }
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = await hashPassword(password, salt);
   if (findUser(email)) {
-    return c.html(renderRegister({ email, error: 'An account with this email already exists.' }), 400);
+    return c.html(renderRegister({ success: 'Account created. Redirecting to sign in…', redirect: '/' }), 201);
   }
-  await createUser(email, password);
+  users.set(email, { email, salt, passwordHash });
   return c.html(renderRegister({ success: 'Account created. Redirecting to sign in…', redirect: '/' }), 201);
 });
 

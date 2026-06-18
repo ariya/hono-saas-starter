@@ -37,7 +37,7 @@
 
 ### Medium
 
-- [ ] Prevent user enumeration via the registration "already exists" message.
+- [*] Prevent user enumeration via the registration "already exists" message.
 - [*] Validate email format on the server in the registration handler.
 - [ ] Use an opaque per-user session ID instead of the user's email (PII) as the signed session cookie subject.
 - [*] Enable a Content-Security-Policy header via secureHeaders.
