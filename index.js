@@ -84,7 +84,9 @@ const renderSignin = (data) => {
   return eta.render('signin', { csrfToken: createCsrfToken(), welcome, ...data });
 };
 
-app.get('/', (c) => {
+app.get('/', async (c) => {
+  const user = await getCurrentUser(c);
+  if (user) return c.redirect('/profile');
   return c.html(renderSignin({}));
 });
 
