@@ -158,11 +158,15 @@ app.get('/register', async (c) => {
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 1024;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 app.post('/register', csrfGuard, async (c) => {
   const body = await c.req.parseBody();
   const email = String(body.email || '').toLowerCase();
   const password = String(body.password || '');
+  if (!EMAIL_RE.test(email)) {
+    return c.html(renderRegister({ email, error: 'Please enter a valid email address.' }), 400);
+  }
   if (password.length < MIN_PASSWORD_LENGTH) {
     return c.html(
       renderRegister({ email, error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.` }),
