@@ -1,6 +1,7 @@
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
+const { getCookie, setCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -54,7 +55,8 @@ app.post('/signin', async (c) => {
   if (!user || !verifyPassword(password, user)) {
     return c.html(renderSignin({ email, error: 'Invalid email or password.' }), 401);
   }
-  return c.text('Signed in');
+  setCookie(c, 'session', user.email, { path: '/', httpOnly: true, sameSite: 'Lax' });
+  return c.redirect('/profile');
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
