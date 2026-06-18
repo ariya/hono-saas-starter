@@ -10,7 +10,7 @@ const eta = new Eta({ views: path.join(__dirname, 'views'), cache: false });
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-const HMAC_SECRET = process.env.HMAC_SECRET || (isDev ? 'dev-insecure-secret' : null);
+const HMAC_SECRET = process.env.HMAC_SECRET || (isDev ? crypto.randomBytes(32).toString('hex') : null);
 if (!HMAC_SECRET) {
   throw new Error('HMAC_SECRET environment variable is required in production');
 }
