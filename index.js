@@ -67,6 +67,12 @@ const csrfGuard = async (c, next) => {
   await next();
 };
 
+const getCurrentUser = async (c) => {
+  const email = await getSignedCookie(c, HMAC_SECRET, 'session');
+  if (!email) return null;
+  return findUser(email) || null;
+};
+
 createUser('demo@example.com', 'password123456');
 
 const app = new Hono();
@@ -98,6 +104,12 @@ app.post('/signin', csrfGuard, async (c) => {
     maxAge: 7 * 60 * 60
   });
   return c.redirect('/profile');
+});
+
+app.get('/profile', async (c) => {
+  const user = await getCurrentUser(c);
+  if (!user) return c.redirect('/');
+  return c.html(eta.render('profile', { email: user.email }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
