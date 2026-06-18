@@ -19,6 +19,7 @@ if (!HMAC_SECRET) {
 const WELCOME_TITLES = ['Welcome back', 'Hello again', 'Good to see you', 'We missed you', 'Glad you are here'];
 
 const users = new Map();
+const sessions = new Map();
 
 const scryptAsync = (password, salt, keylen) =>
   new Promise((resolve, reject) => {
@@ -88,9 +89,26 @@ const csrfGuard = async (c, next) => {
 };
 
 const getCurrentUser = async (c) => {
-  const email = await getSignedCookie(c, HMAC_SECRET, 'session');
+  const sessionId = await getSignedCookie(c, HMAC_SECRET, 'session');
+  if (!sessionId) return null;
+  const email = sessions.get(sessionId);
   if (!email) return null;
   return findUser(email) || null;
+};
+
+const getSessionId = async (c) => {
+  return (await getSignedCookie(c, HMAC_SECRET, 'session')) || null;
+};
+
+const createSession = (email) => {
+  const sessionId = crypto.randomBytes(32).toString('hex');
+  sessions.set(sessionId, email);
+  return sessionId;
+};
+
+const destroySession = async (c) => {
+  const sessionId = await getSessionId(c);
+  if (sessionId) sessions.delete(sessionId);
 };
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -207,7 +225,7 @@ app.post('/signin', csrfGuard, async (c) => {
   if (!existing || !valid) {
     return c.html(renderSignin({ email, error: 'Invalid email or password.' }), 401);
   }
-  await setSignedCookie(c, 'session', user.email, HMAC_SECRET, {
+  await setSignedCookie(c, 'session', createSession(user.email), HMAC_SECRET, {
     path: '/',
     httpOnly: true,
     sameSite: 'Lax',
@@ -223,7 +241,8 @@ app.get('/profile', async (c) => {
   return c.html(renderProfile({ email: user.email }));
 });
 
-app.post('/signout', csrfGuard, (c) => {
+app.post('/signout', csrfGuard, async (c) => {
+  await destroySession(c);
   deleteCookie(c, 'session', {
     path: '/',
     httpOnly: true,
