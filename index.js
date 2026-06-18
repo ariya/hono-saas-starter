@@ -147,6 +147,16 @@ app.get('/profile', async (c) => {
   return c.html(renderProfile({ email: user.email }));
 });
 
+app.post('/signout', csrfGuard, (c) => {
+  deleteCookie(c, 'session', {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: !isDev
+  });
+  return c.redirect('/');
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
