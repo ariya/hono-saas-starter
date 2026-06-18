@@ -55,7 +55,13 @@ app.post('/signin', async (c) => {
   if (!user || !verifyPassword(password, user)) {
     return c.html(renderSignin({ email, error: 'Invalid email or password.' }), 401);
   }
-  setCookie(c, 'session', user.email, { path: '/', httpOnly: true, sameSite: 'Lax' });
+  setCookie(c, 'session', user.email, {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: true,
+    maxAge: 7 * 60 * 60
+  });
   return c.redirect('/profile');
 });
 
