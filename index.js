@@ -8,6 +8,8 @@ const crypto = require('node:crypto');
 
 const eta = new Eta({ views: path.join(__dirname, 'views'), cache: false });
 
+const isDev = process.env.NODE_ENV !== 'production';
+
 const WELCOME_TITLES = ['Welcome back', 'Hello again', 'Good to see you', 'We missed you', 'Glad you are here'];
 
 const users = new Map();
@@ -59,7 +61,7 @@ app.post('/signin', async (c) => {
     path: '/',
     httpOnly: true,
     sameSite: 'Lax',
-    secure: true,
+    secure: !isDev,
     maxAge: 7 * 60 * 60
   });
   return c.redirect('/profile');
