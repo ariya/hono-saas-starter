@@ -20,28 +20,44 @@ const WELCOME_TITLES = ['Welcome back', 'Hello again', 'Good to see you', 'We mi
 
 const users = new Map();
 
+const scryptAsync = (password, salt, keylen) =>
+  new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, keylen, (err, buf) => {
+      if (err) reject(err);
+      else resolve(buf);
+    });
+  });
+
 const hashPassword = (password, salt) => {
-  return crypto.scryptSync(password, salt, 64).toString('hex');
+  return scryptAsync(password, salt, 64).then((buf) => buf.toString('hex'));
 };
 
-const createUser = (email, password) => {
+const createUser = async (email, password) => {
   const salt = crypto.randomBytes(16).toString('hex');
-  const user = { email, salt, passwordHash: hashPassword(password, salt) };
+  const user = { email, salt, passwordHash: await hashPassword(password, salt) };
   users.set(email, user);
   return user;
 };
 
 const findUser = (email) => users.get(email);
 
-const verifyPassword = (password, user) => {
-  return crypto.timingSafeEqual(
-    Buffer.from(user.passwordHash, 'hex'),
-    Buffer.from(hashPassword(password, user.salt), 'hex')
-  );
+const verifyPassword = async (password, user) => {
+  const [expected, actual] = await Promise.all([hashPassword(password, user.salt), user.passwordHash]);
+  const a = Buffer.from(actual, 'hex');
+  const b = Buffer.from(expected, 'hex');
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
 };
 
 const DUMMY_SALT = crypto.randomBytes(16).toString('hex');
-const DUMMY_USER = { email: '', salt: DUMMY_SALT, passwordHash: hashPassword('dummy-password', DUMMY_SALT) };
+let DUMMY_USER = null;
+
+const ensureDummyUser = async () => {
+  if (!DUMMY_USER) {
+    DUMMY_USER = { email: '', salt: DUMMY_SALT, passwordHash: await hashPassword('dummy-password', DUMMY_SALT) };
+  }
+  return DUMMY_USER;
+};
 
 const createCsrfToken = () => {
   const payload = String(Math.floor(Date.now() / 1000));
@@ -96,8 +112,6 @@ const isRateLimited = (key) => recentAttempts(key).length >= RATE_LIMIT_MAX;
 
 const getClientIp = (c) => c.req.raw.socket?.remoteAddress || 'unknown';
 
-createUser('demo@example.com', 'password123456');
-
 const app = new Hono();
 
 app.use(secureHeaders());
@@ -150,7 +164,7 @@ app.post('/register', csrfGuard, async (c) => {
   if (findUser(email)) {
     return c.html(renderRegister({ email, error: 'An account with this email already exists.' }), 400);
   }
-  createUser(email, password);
+  await createUser(email, password);
   return c.html(renderRegister({ success: 'Account created. Redirecting to sign in…', redirect: '/' }), 201);
 });
 
@@ -168,8 +182,8 @@ app.post('/signin', csrfGuard, async (c) => {
     return c.html(renderSignin({ email, error: 'Invalid email or password.' }), 401);
   }
   const existing = findUser(email);
-  const user = existing || DUMMY_USER;
-  const valid = verifyPassword(password, user);
+  const user = existing || (await ensureDummyUser());
+  const valid = await verifyPassword(password, user);
   if (!existing || !valid) {
     return c.html(renderSignin({ email, error: 'Invalid email or password.' }), 401);
   }
@@ -202,5 +216,9 @@ app.post('/signout', csrfGuard, (c) => {
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
-serve({ fetch: app.fetch, port });
-console.log('Listening on port', port);
+
+(async () => {
+  await createUser('demo@example.com', 'password123456');
+  serve({ fetch: app.fetch, port });
+  console.log('Listening on port', port);
+})();
