@@ -20,3 +20,30 @@
 - [*] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [*] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
 - [*] Implement the /signout handler to clear session cookies and redirect to the landing page.
+
+## Security Audit
+
+### Critical
+
+- [ ] Replace the hardcoded dev fallback HMAC secret with a random per-process secret to prevent session forgery when NODE_ENV is unset.
+- [ ] Eliminate the sign-in timing oracle that lets attackers enumerate registered emails (verifyPassword runs only for existing users).
+- [ ] Add rate limiting / brute-force throttling on the POST /signin endpoint.
+- [ ] Enforce a request body size limit and a maximum password length to prevent memory/CPU DoS via scrypt on oversized inputs.
+
+### High
+
+- [ ] Bind the CSRF token to the user session so authenticated POST routes (e.g. /signout) cannot be replayed cross-site.
+- [ ] Replace blocking scryptSync with asynchronous scrypt to avoid stalling the event loop on every login.
+
+### Medium
+
+- [ ] Prevent user enumeration via the registration "already exists" message.
+- [ ] Validate email format on the server in the registration handler.
+- [ ] Use an opaque per-user session ID instead of the user's email (PII) as the signed session cookie subject.
+- [ ] Enable a Content-Security-Policy header via secureHeaders.
+- [ ] Seed the demo account only in development so production has no hardcoded credentials.
+
+### Low
+
+- [ ] Derive separate keys for session cookies and CSRF tokens instead of reusing HMAC_SECRET.
+- [ ] Document the inability to revoke sessions server-side (inherent to the stateless signed-cookie design).
