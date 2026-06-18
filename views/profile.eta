@@ -6,6 +6,11 @@
     <title>Profile</title>
   </head>
   <body>
+    <header>
+      <nav>
+        <span class="nav-email"><%= it.email %></span>
+      </nav>
+    </header>
     <main>
       <h1>Profile</h1>
       <p>Signed in as <%= it.email %></p>
