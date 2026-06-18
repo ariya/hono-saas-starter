@@ -27,7 +27,7 @@
 
 - [*] Replace the hardcoded dev fallback HMAC secret with a random per-process secret to prevent session forgery when NODE_ENV is unset.
 - [*] Eliminate the sign-in timing oracle that lets attackers enumerate registered emails (verifyPassword runs only for existing users).
-- [ ] Add rate limiting / brute-force throttling on the POST /signin endpoint.
+- [*] Add rate limiting / brute-force throttling on the POST /signin endpoint.
 - [ ] Enforce a request body size limit and a maximum password length to prevent memory/CPU DoS via scrypt on oversized inputs.
 
 ### High

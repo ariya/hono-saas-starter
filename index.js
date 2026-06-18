@@ -76,6 +76,25 @@ const getCurrentUser = async (c) => {
   return findUser(email) || null;
 };
 
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX = 10;
+const loginAttempts = new Map();
+
+const recentAttempts = (key) => {
+  const now = Date.now();
+  const list = (loginAttempts.get(key) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  loginAttempts.set(key, list);
+  return list;
+};
+
+const recordAttempt = (key) => {
+  recentAttempts(key).push(Date.now());
+};
+
+const isRateLimited = (key) => recentAttempts(key).length >= RATE_LIMIT_MAX;
+
+const getClientIp = (c) => c.req.raw.socket?.remoteAddress || 'unknown';
+
 createUser('demo@example.com', 'password123456');
 
 const app = new Hono();
@@ -130,6 +149,12 @@ app.post('/signin', csrfGuard, async (c) => {
   const body = await c.req.parseBody();
   const email = String(body.email || '').toLowerCase();
   const password = String(body.password || '');
+  const ip = getClientIp(c);
+  if (isRateLimited(`ip:${ip}`) || isRateLimited(`email:${email}`)) {
+    return c.text('Too many sign-in attempts. Please try again later.', 429);
+  }
+  recordAttempt(`ip:${ip}`);
+  recordAttempt(`email:${email}`);
   const existing = findUser(email);
   const user = existing || DUMMY_USER;
   const valid = verifyPassword(password, user);
