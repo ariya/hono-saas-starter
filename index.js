@@ -114,7 +114,21 @@ const getClientIp = (c) => c.req.raw.socket?.remoteAddress || 'unknown';
 
 const app = new Hono();
 
-app.use(secureHeaders());
+app.use(
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", 'https://oat.ink'],
+      imgSrc: ["'self'"],
+      fontSrc: ["'self'", 'https://oat.ink'],
+      connectSrc: ["'self'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"]
+    }
+  })
+);
 app.use(bodyLimit({ maxSize: 16 * 1024 }));
 
 const renderSignin = (data) => {
