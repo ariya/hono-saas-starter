@@ -39,6 +39,9 @@ const verifyPassword = (password, user) => {
   );
 };
 
+const DUMMY_SALT = crypto.randomBytes(16).toString('hex');
+const DUMMY_USER = { email: '', salt: DUMMY_SALT, passwordHash: hashPassword('dummy-password', DUMMY_SALT) };
+
 const createCsrfToken = () => {
   const payload = String(Math.floor(Date.now() / 1000));
   const sig = crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('base64url');
@@ -127,8 +130,10 @@ app.post('/signin', csrfGuard, async (c) => {
   const body = await c.req.parseBody();
   const email = String(body.email || '').toLowerCase();
   const password = String(body.password || '');
-  const user = findUser(email);
-  if (!user || !verifyPassword(password, user)) {
+  const existing = findUser(email);
+  const user = existing || DUMMY_USER;
+  const valid = verifyPassword(password, user);
+  if (!existing || !valid) {
     return c.html(renderSignin({ email, error: 'Invalid email or password.' }), 401);
   }
   await setSignedCookie(c, 'session', user.email, HMAC_SECRET, {
