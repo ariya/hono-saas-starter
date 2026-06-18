@@ -60,29 +60,37 @@ const ensureDummyUser = async () => {
   return DUMMY_USER;
 };
 
-const createCsrfToken = () => {
-  const payload = String(Math.floor(Date.now() / 1000));
+const CSRF_ANON_SUBJECT = 'anon';
+
+const createCsrfToken = (subject) => {
+  const payload = `${subject}.${Math.floor(Date.now() / 1000)}`;
   const sig = crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('base64url');
   return `${payload}.${sig}`;
 };
 
-const verifyCsrfToken = (token) => {
+const verifyCsrfToken = (token, expectedSubject) => {
   if (!token || typeof token !== 'string') return false;
-  const idx = token.lastIndexOf('.');
-  if (idx < 1) return false;
-  const payload = token.slice(0, idx);
-  const sig = token.slice(idx + 1);
+  const firstDot = token.indexOf('.');
+  const lastDot = token.lastIndexOf('.');
+  if (firstDot < 1 || lastDot <= firstDot) return false;
+  const subject = token.slice(0, firstDot);
+  const timestamp = token.slice(firstDot + 1, lastDot);
+  const sig = token.slice(lastDot + 1);
+  if (subject !== expectedSubject) return false;
+  const payload = `${subject}.${timestamp}`;
   const expected = crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('base64url');
   if (sig.length !== expected.length) return false;
   if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
-  const issued = Number(payload);
+  const issued = Number(timestamp);
   if (!Number.isFinite(issued)) return false;
   return Math.floor(Date.now() / 1000) - issued <= 3600;
 };
 
 const csrfGuard = async (c, next) => {
+  const sessionId = await getSessionId(c);
+  const subject = sessionId && sessions.has(sessionId) ? sessionId : CSRF_ANON_SUBJECT;
   const body = await c.req.parseBody();
-  if (!verifyCsrfToken(body.csrf)) {
+  if (!verifyCsrfToken(body.csrf, subject)) {
     return c.text('Invalid or missing CSRF token', 403);
   }
   await next();
@@ -151,15 +159,15 @@ app.use(bodyLimit({ maxSize: 16 * 1024 }));
 
 const renderSignin = (data) => {
   const welcome = data.welcome || WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
-  return eta.render('signin', { csrfToken: createCsrfToken(), welcome, ...data });
+  return eta.render('signin', { csrfToken: createCsrfToken(CSRF_ANON_SUBJECT), welcome, ...data });
 };
 
 const renderRegister = (data) => {
-  return eta.render('register', { csrfToken: createCsrfToken(), ...data });
+  return eta.render('register', { csrfToken: createCsrfToken(CSRF_ANON_SUBJECT), ...data });
 };
 
-const renderProfile = (data) => {
-  return eta.render('profile', { csrfToken: createCsrfToken(), ...data });
+const renderProfile = (data, sessionId) => {
+  return eta.render('profile', { csrfToken: createCsrfToken(sessionId), ...data });
 };
 
 app.get('/', async (c) => {
@@ -238,7 +246,8 @@ app.post('/signin', csrfGuard, async (c) => {
 app.get('/profile', async (c) => {
   const user = await getCurrentUser(c);
   if (!user) return c.redirect('/');
-  return c.html(renderProfile({ email: user.email }));
+  const sessionId = await getSessionId(c);
+  return c.html(renderProfile({ email: user.email }, sessionId));
 });
 
 app.post('/signout', csrfGuard, async (c) => {

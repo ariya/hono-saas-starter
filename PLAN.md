@@ -32,7 +32,7 @@
 
 ### High
 
-- [ ] Bind the CSRF token to the user session so authenticated POST routes (e.g. /signout) cannot be replayed cross-site.
+- [*] Bind the CSRF token to the user session so authenticated POST routes (e.g. /signout) cannot be replayed cross-site.
 - [*] Replace blocking scryptSync with asynchronous scrypt to avoid stalling the event loop on every login.
 
 ### Medium
