@@ -10,7 +10,10 @@ const eta = new Eta({ views: path.join(__dirname, 'views'), cache: false });
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-const HMAC_SECRET = 'dev-secret-change-me';
+const HMAC_SECRET = process.env.HMAC_SECRET || (isDev ? 'dev-insecure-secret' : null);
+if (!HMAC_SECRET) {
+  throw new Error('HMAC_SECRET environment variable is required in production');
+}
 
 const WELCOME_TITLES = ['Welcome back', 'Hello again', 'Good to see you', 'We missed you', 'Glad you are here'];
 
