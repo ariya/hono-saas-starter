@@ -218,7 +218,9 @@ app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 const port = process.env.PORT || 3000;
 
 (async () => {
-  await createUser('demo@example.com', 'password123456');
+  if (isDev) {
+    await createUser('demo@example.com', 'password123456');
+  }
   serve({ fetch: app.fetch, port });
   console.log('Listening on port', port);
 })();
