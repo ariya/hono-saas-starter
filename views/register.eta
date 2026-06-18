@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <% if (it.redirect) { %>
+    <meta http-equiv="refresh" content="2;url=<%= it.redirect %>" />
+    <% } %>
     <title>Register</title>
   </head>
   <body>

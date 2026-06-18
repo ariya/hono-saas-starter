@@ -112,7 +112,11 @@ app.post('/register', csrfGuard, async (c) => {
       400
     );
   }
-  return c.html(renderRegister({}));
+  if (findUser(email)) {
+    return c.html(renderRegister({ email, error: 'An account with this email already exists.' }), 400);
+  }
+  createUser(email, password);
+  return c.html(renderRegister({ success: 'Account created. Redirecting to sign in…', redirect: '/' }), 201);
 });
 
 app.post('/signin', csrfGuard, async (c) => {
