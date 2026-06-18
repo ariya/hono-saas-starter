@@ -1,7 +1,7 @@
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
-const { getCookie, setCookie } = require('hono/cookie');
+const { getCookie, getSignedCookie, setCookie, setSignedCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -10,15 +10,14 @@ const eta = new Eta({ views: path.join(__dirname, 'views'), cache: false });
 
 const isDev = process.env.NODE_ENV !== 'production';
 
+const HMAC_SECRET = 'dev-secret-change-me';
+
 const WELCOME_TITLES = ['Welcome back', 'Hello again', 'Good to see you', 'We missed you', 'Glad you are here'];
 
 const users = new Map();
 
 const hashPassword = (password, salt) => {
-  return crypto
-    .createHash('sha256')
-    .update(salt + password)
-    .digest('hex');
+  return crypto.scryptSync(password, salt, 64).toString('hex');
 };
 
 const createUser = (email, password) => {
@@ -31,7 +30,10 @@ const createUser = (email, password) => {
 const findUser = (email) => users.get(email);
 
 const verifyPassword = (password, user) => {
-  return user.passwordHash === hashPassword(password, user.salt);
+  return crypto.timingSafeEqual(
+    Buffer.from(user.passwordHash, 'hex'),
+    Buffer.from(hashPassword(password, user.salt), 'hex')
+  );
 };
 
 createUser('demo@example.com', 'password123456');
@@ -57,7 +59,7 @@ app.post('/signin', async (c) => {
   if (!user || !verifyPassword(password, user)) {
     return c.html(renderSignin({ email, error: 'Invalid email or password.' }), 401);
   }
-  setCookie(c, 'session', user.email, {
+  await setSignedCookie(c, 'session', user.email, HMAC_SECRET, {
     path: '/',
     httpOnly: true,
     sameSite: 'Lax',
