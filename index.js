@@ -39,6 +39,34 @@ const verifyPassword = (password, user) => {
   );
 };
 
+const createCsrfToken = () => {
+  const payload = String(Math.floor(Date.now() / 1000));
+  const sig = crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('base64url');
+  return `${payload}.${sig}`;
+};
+
+const verifyCsrfToken = (token) => {
+  if (!token || typeof token !== 'string') return false;
+  const idx = token.lastIndexOf('.');
+  if (idx < 1) return false;
+  const payload = token.slice(0, idx);
+  const sig = token.slice(idx + 1);
+  const expected = crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('base64url');
+  if (sig.length !== expected.length) return false;
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
+  const issued = Number(payload);
+  if (!Number.isFinite(issued)) return false;
+  return Math.floor(Date.now() / 1000) - issued <= 3600;
+};
+
+const csrfGuard = async (c, next) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(body.csrf)) {
+    return c.text('Invalid or missing CSRF token', 403);
+  }
+  await next();
+};
+
 createUser('demo@example.com', 'password123456');
 
 const app = new Hono();
@@ -47,14 +75,14 @@ app.use(secureHeaders());
 
 const renderSignin = (data) => {
   const welcome = data.welcome || WELCOME_TITLES[Math.floor(Math.random() * WELCOME_TITLES.length)];
-  return eta.render('signin', { welcome, ...data });
+  return eta.render('signin', { csrfToken: createCsrfToken(), welcome, ...data });
 };
 
 app.get('/', (c) => {
   return c.html(renderSignin({}));
 });
 
-app.post('/signin', async (c) => {
+app.post('/signin', csrfGuard, async (c) => {
   const body = await c.req.parseBody();
   const email = String(body.email || '').toLowerCase();
   const password = String(body.password || '');
