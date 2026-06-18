@@ -4,5 +4,13 @@
   "singleQuote": true,
   "tabWidth": 2,
   "trailingComma": "none",
-  "quoteProps": "consistent"
+  "quoteProps": "consistent",
+  "overrides": [
+    {
+      "files": "*.eta",
+      "options": {
+        "parser": "html"
+      }
+    }
+  ]
 }
