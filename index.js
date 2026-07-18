@@ -111,6 +111,24 @@ app.post('/signin', async (c) => {
 
 app.get('/register', (c) => c.html(eta.render('register', { csrf: issueCsrfToken(c) })));
 
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(c, body.csrf)) {
+    return c.html(
+      eta.render('register', { csrf: issueCsrfToken(c), error: 'Invalid form submission, please try again' }),
+      403
+    );
+  }
+  const password = String(body.password || '');
+  if (password.length < 8) {
+    return c.html(
+      eta.render('register', { csrf: issueCsrfToken(c), error: 'Password must be at least 8 characters long' }),
+      400
+    );
+  }
+  return c.text('Registered');
+});
+
 app.get('/profile', (c) => {
   const email = verifySession(getCookie(c, 'session'));
   if (!email) return c.redirect('/');
