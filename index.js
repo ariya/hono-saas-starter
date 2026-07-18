@@ -19,7 +19,29 @@ if (!HMAC_SECRET) {
   process.exit(1);
 }
 
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
 const users = new Map();
+const rateLimits = new Map();
+
+const clientIp = (c) => c.env.incoming?.socket?.remoteAddress || 'unknown';
+
+const isRateLimited = (key) => {
+  const now = Date.now();
+  let entry = rateLimits.get(key);
+  if (!entry || entry.reset <= now) {
+    entry = { count: 0, reset: now + RATE_LIMIT_WINDOW_MS };
+    rateLimits.set(key, entry);
+    if (rateLimits.size > 1000) {
+      for (const [k, v] of rateLimits) {
+        if (v.reset <= now) rateLimits.delete(k);
+      }
+    }
+  }
+  entry.count += 1;
+  return entry.count > RATE_LIMIT_MAX;
+};
 
 const hashPassword = (password, salt) => crypto.scryptSync(password, salt, 64);
 
@@ -90,6 +112,9 @@ app.get('/', (c) => {
 });
 
 app.post('/signin', async (c) => {
+  if (isRateLimited(clientIp(c))) {
+    return renderSignin(c, { error: 'Too many attempts, please try again later' }, 429);
+  }
   const body = await c.req.parseBody();
   if (!verifyCsrfToken(c, body.csrf)) {
     return renderSignin(c, { error: 'Invalid form submission, please try again' }, 403);
@@ -112,6 +137,12 @@ app.post('/signin', async (c) => {
 app.get('/register', (c) => c.html(eta.render('register', { csrf: issueCsrfToken(c) })));
 
 app.post('/register', async (c) => {
+  if (isRateLimited(clientIp(c))) {
+    return c.html(
+      eta.render('register', { csrf: issueCsrfToken(c), error: 'Too many attempts, please try again later' }),
+      429
+    );
+  }
   const body = await c.req.parseBody();
   if (!verifyCsrfToken(c, body.csrf)) {
     return c.html(

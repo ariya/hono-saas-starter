@@ -29,7 +29,7 @@
 
 ### High
 
-- [ ] Add rate limiting to /signin and /register to prevent unlimited online brute-force and credential-stuffing attempts.
+- [x] Add rate limiting to /signin and /register to prevent unlimited online brute-force and credential-stuffing attempts.
 - [ ] Enforce a maximum request body size and maximum input lengths (email, password) to prevent memory-exhaustion DoS via unbounded form posts (parseBody buffers the entire body) and CPU abuse through oversized inputs.
 
 ### Medium
