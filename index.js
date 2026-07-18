@@ -105,13 +105,6 @@ const verifyCsrfToken = (c, token) => {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
-const createUser = (email, password) => {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const user = { email, hash: hashPassword(password, salt).toString('hex'), salt };
-  users.set(email, user);
-  return user;
-};
-
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello', 'Hello again', 'Greetings'];
 
 const renderSignin = (c, options = {}, status = 200) => {
@@ -190,19 +183,16 @@ app.post('/register', async (c) => {
       400
     );
   }
-  if (users.has(email)) {
-    return c.html(
-      eta.render('register', { csrf: issueCsrfToken(c), error: 'An account with this email already exists' }),
-      409
-    );
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = hashPassword(password, salt).toString('hex');
+  if (!users.has(email)) {
+    users.set(email, { email, hash, salt });
   }
-  createUser(email, password);
   return c.html(
     eta.render('register', {
       csrf: issueCsrfToken(c),
-      success: 'Account created successfully, redirecting to sign in...'
-    }),
-    201
+      success: 'If this email is not registered yet, the account has been created. Redirecting to sign in...'
+    })
   );
 });
 

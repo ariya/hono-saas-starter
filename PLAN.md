@@ -35,7 +35,7 @@
 ### Medium
 
 - [x] Eliminate timing-based user enumeration on /signin by always running scrypt against a dummy salt when the email is unknown.
-- [ ] Remove the account-enumeration oracle on /register (the 409 "already exists" response reveals registered emails).
+- [x] Remove the account-enumeration oracle on /register (the 409 "already exists" response reveals registered emails).
 - [ ] Bind sessions to an existing user record; a stateless session stays valid for users wiped from the ephemeral store while HMAC_SECRET persists.
 
 ### Low
