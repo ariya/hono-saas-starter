@@ -3,7 +3,7 @@ const path = require('path');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
-const { setCookie } = require('hono/cookie');
+const { getCookie, setCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const app = new Hono();
@@ -50,6 +50,26 @@ const verifySession = (token) => {
   return Buffer.from(encoded, 'base64url').toString();
 };
 
+const issueCsrfToken = (c) => {
+  const nonce = crypto.randomBytes(16).toString('hex');
+  setCookie(c, 'csrf', nonce, {
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: isProduction,
+    maxAge: SESSION_MAX_AGE
+  });
+  return hmac(`csrf:${nonce}`);
+};
+
+const verifyCsrfToken = (c, token) => {
+  const nonce = getCookie(c, 'csrf');
+  if (!nonce || !token) return false;
+  const expected = hmac(`csrf:${nonce}`);
+  const a = Buffer.from(String(token));
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
+
 const createUser = (email, password) => {
   const salt = crypto.randomBytes(16).toString('hex');
   const user = { email, hash: hashPassword(password, salt).toString('hex'), salt };
@@ -61,13 +81,16 @@ const welcomeTitles = ['Welcome', 'Welcome back', 'Hello', 'Hello again', 'Greet
 
 const renderSignin = (c, options = {}, status = 200) => {
   const title = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
-  return c.html(eta.render('signin', { title, ...options }), status);
+  return c.html(eta.render('signin', { title, csrf: issueCsrfToken(c), ...options }), status);
 };
 
 app.get('/', (c) => renderSignin(c));
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
+  if (!verifyCsrfToken(c, body.csrf)) {
+    return renderSignin(c, { error: 'Invalid form submission, please try again' }, 403);
+  }
   const email = String(body.email || '');
   const password = String(body.password || '');
   const user = users.get(email);
