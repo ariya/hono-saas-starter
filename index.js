@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const path = require('path');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
@@ -8,6 +9,21 @@ const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 
 app.use(secureHeaders());
+
+const users = new Map();
+
+const hashPassword = (password, salt) =>
+  crypto
+    .createHash('sha256')
+    .update(salt + password)
+    .digest('hex');
+
+const createUser = (email, password) => {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const user = { email, hash: hashPassword(password, salt), salt };
+  users.set(email, user);
+  return user;
+};
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello', 'Hello again', 'Greetings'];
 
