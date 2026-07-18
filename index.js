@@ -36,6 +36,8 @@ const MAX_PASSWORD_LENGTH = 256;
 const users = new Map();
 const rateLimits = new Map();
 
+const DUMMY_USER = { salt: crypto.randomBytes(16).toString('hex'), hash: crypto.randomBytes(64).toString('hex') };
+
 const clientIp = (c) => c.env.incoming?.socket?.remoteAddress || 'unknown';
 
 const isRateLimited = (key) => {
@@ -136,7 +138,8 @@ app.post('/signin', async (c) => {
     return renderSignin(c, { error: 'Invalid email or password' }, 401);
   }
   const user = users.get(email);
-  if (!user || !verifyPassword(password, user)) {
+  const passwordValid = verifyPassword(password, user || DUMMY_USER);
+  if (!user || !passwordValid) {
     return renderSignin(c, { error: 'Invalid email or password' }, 401);
   }
   setCookie(c, 'session', createSession(user.email), {
