@@ -12,6 +12,7 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 app.use(secureHeaders());
 
 const SESSION_MAX_AGE = 7 * 60 * 60;
+const isProduction = process.env.NODE_ENV === 'production';
 
 const users = new Map();
 
@@ -45,7 +46,12 @@ app.post('/signin', async (c) => {
   if (!user || user.hash !== hashPassword(password, user.salt)) {
     return renderSignin(c, { error: 'Invalid email or password' }, 401);
   }
-  setCookie(c, 'session', user.email, { httpOnly: true, sameSite: 'Lax', secure: true, maxAge: SESSION_MAX_AGE });
+  setCookie(c, 'session', user.email, {
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: isProduction,
+    maxAge: SESSION_MAX_AGE
+  });
   return c.redirect('/profile');
 });
 
