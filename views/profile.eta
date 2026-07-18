@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Profile</title>
+    <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css">
+  </head>
+  <body>
+    <nav>
+      <span><%= it.email %></span>
+    </nav>
+    <main>
+      <h1>Profile</h1>
+    </main>
+  </body>
+</html>
