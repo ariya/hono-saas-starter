@@ -13,7 +13,11 @@ app.use(secureHeaders());
 
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const isProduction = process.env.NODE_ENV === 'production';
-const HMAC_SECRET = crypto.randomBytes(32).toString('hex');
+const HMAC_SECRET = process.env.HMAC_SECRET || (isProduction ? '' : crypto.randomBytes(32).toString('hex'));
+if (!HMAC_SECRET) {
+  console.error('HMAC_SECRET environment variable is required in production');
+  process.exit(1);
+}
 
 const users = new Map();
 
