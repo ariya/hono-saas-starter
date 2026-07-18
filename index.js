@@ -11,6 +11,14 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 
 app.use(secureHeaders());
 
+app.use(async (c, next) => {
+  const length = Number(c.req.header('content-length'));
+  if (c.req.method === 'POST' && Number.isFinite(length) && length > MAX_BODY_SIZE) {
+    return c.text('Payload Too Large', 413);
+  }
+  await next();
+});
+
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const isProduction = process.env.NODE_ENV === 'production';
 const HMAC_SECRET = process.env.HMAC_SECRET || (isProduction ? '' : crypto.randomBytes(32).toString('hex'));
@@ -21,6 +29,9 @@ if (!HMAC_SECRET) {
 
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const MAX_BODY_SIZE = 16 * 1024;
+const MAX_EMAIL_LENGTH = 254;
+const MAX_PASSWORD_LENGTH = 256;
 
 const users = new Map();
 const rateLimits = new Map();
@@ -121,6 +132,9 @@ app.post('/signin', async (c) => {
   }
   const email = String(body.email || '');
   const password = String(body.password || '');
+  if (email.length > MAX_EMAIL_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+    return renderSignin(c, { error: 'Invalid email or password' }, 401);
+  }
   const user = users.get(email);
   if (!user || !verifyPassword(password, user)) {
     return renderSignin(c, { error: 'Invalid email or password' }, 401);
@@ -152,6 +166,18 @@ app.post('/register', async (c) => {
   }
   const email = String(body.email || '');
   const password = String(body.password || '');
+  if (email.length > MAX_EMAIL_LENGTH) {
+    return c.html(
+      eta.render('register', { csrf: issueCsrfToken(c), error: 'Email must be at most 254 characters long' }),
+      400
+    );
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return c.html(
+      eta.render('register', { csrf: issueCsrfToken(c), error: 'Password must be at most 256 characters long' }),
+      400
+    );
+  }
   if (!email.includes('@')) {
     return c.html(eta.render('register', { csrf: issueCsrfToken(c), error: 'A valid email address is required' }), 400);
   }
