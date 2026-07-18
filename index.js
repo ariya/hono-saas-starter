@@ -84,7 +84,10 @@ const renderSignin = (c, options = {}, status = 200) => {
   return c.html(eta.render('signin', { title, csrf: issueCsrfToken(c), ...options }), status);
 };
 
-app.get('/', (c) => renderSignin(c));
+app.get('/', (c) => {
+  if (verifySession(getCookie(c, 'session'))) return c.redirect('/profile');
+  return renderSignin(c);
+});
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
