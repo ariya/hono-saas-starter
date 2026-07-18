@@ -13,18 +13,42 @@ app.use(secureHeaders());
 
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const isProduction = process.env.NODE_ENV === 'production';
+const HMAC_SECRET = crypto.randomBytes(32).toString('hex');
 
 const users = new Map();
 
-const hashPassword = (password, salt) =>
-  crypto
-    .createHash('sha256')
-    .update(salt + password)
-    .digest('hex');
+const hashPassword = (password, salt) => crypto.scryptSync(password, salt, 64);
+
+const verifyPassword = (password, user) => {
+  const candidate = hashPassword(password, user.salt);
+  const stored = Buffer.from(user.hash, 'hex');
+  return candidate.length === stored.length && crypto.timingSafeEqual(candidate, stored);
+};
+
+const hmac = (value) => crypto.createHmac('sha256', HMAC_SECRET).update(value).digest('hex');
+
+const createSession = (email) => {
+  const payload = `${Buffer.from(email).toString('base64url')}.${Date.now() + SESSION_MAX_AGE * 1000}`;
+  return `${payload}.${hmac(payload)}`;
+};
+
+const verifySession = (token) => {
+  if (!token) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [encoded, expires, signature] = parts;
+  const expected = hmac(`${encoded}.${expires}`);
+  const a = Buffer.from(signature);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  const expiresAt = Number(expires);
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) return null;
+  return Buffer.from(encoded, 'base64url').toString();
+};
 
 const createUser = (email, password) => {
   const salt = crypto.randomBytes(16).toString('hex');
-  const user = { email, hash: hashPassword(password, salt), salt };
+  const user = { email, hash: hashPassword(password, salt).toString('hex'), salt };
   users.set(email, user);
   return user;
 };
@@ -43,10 +67,10 @@ app.post('/signin', async (c) => {
   const email = String(body.email || '');
   const password = String(body.password || '');
   const user = users.get(email);
-  if (!user || user.hash !== hashPassword(password, user.salt)) {
+  if (!user || !verifyPassword(password, user)) {
     return renderSignin(c, { error: 'Invalid email or password' }, 401);
   }
-  setCookie(c, 'session', user.email, {
+  setCookie(c, 'session', createSession(user.email), {
     httpOnly: true,
     sameSite: 'Lax',
     secure: isProduction,
