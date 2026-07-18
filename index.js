@@ -119,14 +119,31 @@ app.post('/register', async (c) => {
       403
     );
   }
+  const email = String(body.email || '');
   const password = String(body.password || '');
+  if (!email.includes('@')) {
+    return c.html(eta.render('register', { csrf: issueCsrfToken(c), error: 'A valid email address is required' }), 400);
+  }
   if (password.length < 8) {
     return c.html(
       eta.render('register', { csrf: issueCsrfToken(c), error: 'Password must be at least 8 characters long' }),
       400
     );
   }
-  return c.text('Registered');
+  if (users.has(email)) {
+    return c.html(
+      eta.render('register', { csrf: issueCsrfToken(c), error: 'An account with this email already exists' }),
+      409
+    );
+  }
+  createUser(email, password);
+  return c.html(
+    eta.render('register', {
+      csrf: issueCsrfToken(c),
+      success: 'Account created successfully, redirecting to sign in...'
+    }),
+    201
+  );
 });
 
 app.get('/profile', (c) => {

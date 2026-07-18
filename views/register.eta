@@ -5,12 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Register</title>
     <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css">
+    <% if (it.success) { %>
+    <meta http-equiv="refresh" content="3;url=/">
+    <% } %>
   </head>
   <body>
     <main>
       <h1>Register</h1>
       <% if (it.error) { %>
       <p role="alert"><%= it.error %></p>
+      <% } %>
+      <% if (it.success) { %>
+      <p role="status"><%= it.success %></p>
       <% } %>
       <form method="post" action="/register">
         <input type="hidden" name="csrf" value="<%= it.csrf %>">
