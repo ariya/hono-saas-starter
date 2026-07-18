@@ -1,16 +1,15 @@
-# Hello, Hono!
+# Coding Assistant Challenge: Basic Auth
 
-A minimal HTTP server built with [Hono](https://hono.dev).
-
-The server listens on `localhost:3000`.
+This project serves as a test for LLM-based coding assistants, challenging them to add basic authentication functionality into a skeleton [Hono](https://hono.dev/)-based web app.
 
 Run with Node.js:
 ```
 npm install
 npm start
 ```
+and then open `localhost:3000`.
 
-See the following branches for how this starter kit was evolved:
+See the following branches for how different LLM coding assistants performed on this task:
 
 | Branch | Duration | Cost |
 |---|:---:|---:|
