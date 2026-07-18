@@ -20,3 +20,28 @@
 - [x] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [x] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
 - [x] Implement the /signout handler to clear session cookies and redirect to the landing page.
+
+## Security Audit
+
+### Critical
+
+- None identified.
+
+### High
+
+- [ ] Add rate limiting to /signin and /register to prevent unlimited online brute-force and credential-stuffing attempts.
+- [ ] Enforce a maximum request body size and maximum input lengths (email, password) to prevent memory-exhaustion DoS via unbounded form posts (parseBody buffers the entire body) and CPU abuse through oversized inputs.
+
+### Medium
+
+- [ ] Eliminate timing-based user enumeration on /signin by always running scrypt against a dummy salt when the email is unknown.
+- [ ] Remove the account-enumeration oracle on /register (the 409 "already exists" response reveals registered emails).
+- [ ] Bind sessions to an existing user record; a stateless session stays valid for users wiped from the ephemeral store while HMAC_SECRET persists.
+
+### Low
+
+- [ ] Add a Content-Security-Policy header (e.g., script-src 'none'); secureHeaders does not set CSP by default.
+- [ ] Send Cache-Control: no-store on authenticated responses so shared caches cannot store pages containing PII.
+- [ ] Avoid placing the user email (base64) inside the session cookie; use an opaque session identifier instead.
+- [ ] Normalize email casing/whitespace at registration and sign-in to prevent duplicate accounts (User@x.com vs user@x.com).
+- [ ] Sessions cannot be revoked server-side (stateless design trade-off); a stolen cookie remains valid until its 7-hour expiry.
