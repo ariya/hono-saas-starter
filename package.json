@@ -8,11 +8,15 @@
   "main": "index.js",
   "scripts": {
     "start": "node index",
+    "format": "prettier --write .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@hono/node-server": "~1.19.14",
     "eta": "~3.5.0",
     "hono": "~4.12.18"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.5"
   }
 }
