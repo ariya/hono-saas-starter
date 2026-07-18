@@ -109,6 +109,8 @@ app.post('/signin', async (c) => {
   return c.redirect('/profile');
 });
 
+app.get('/register', (c) => c.html(eta.render('register', { csrf: issueCsrfToken(c) })));
+
 app.get('/profile', (c) => {
   const email = verifySession(getCookie(c, 'session'));
   if (!email) return c.redirect('/');
