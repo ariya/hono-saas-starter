@@ -5,10 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Profile</title>
     <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css">
+    <style>
+      nav[data-topnav] form {
+        margin-inline-start: auto;
+      }
+    </style>
   </head>
   <body>
-    <nav>
+    <nav data-topnav>
       <span><%= it.email %></span>
+      <form method="post" action="/signout">
+        <input type="hidden" name="csrf" value="<%= it.csrf %>">
+        <button type="submit">Sign Out</button>
+      </form>
     </nav>
     <main>
       <h1>Profile</h1>

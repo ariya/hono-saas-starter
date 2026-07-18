@@ -149,7 +149,7 @@ app.post('/register', async (c) => {
 app.get('/profile', (c) => {
   const email = verifySession(getCookie(c, 'session'));
   if (!email) return c.redirect('/');
-  return c.html(eta.render('profile', { email }));
+  return c.html(eta.render('profile', { email, csrf: issueCsrfToken(c) }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
