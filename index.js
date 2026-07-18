@@ -1,38 +1,15 @@
+const path = require('path');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
+const { Eta } = require('eta');
 
 const app = new Hono();
+const eta = new Eta({ views: path.join(__dirname, 'views') });
 
 app.use(secureHeaders());
 
-app.get('/', (c) => {
-  return c.html(`<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sign in</title>
-    <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css">
-  </head>
-  <body>
-    <main>
-      <h1>Welcome</h1>
-      <form method="post" action="/signin">
-        <p>
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" autocomplete="email" required>
-        </p>
-        <p>
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" autocomplete="current-password" required>
-        </p>
-        <button type="submit">Sign in</button>
-      </form>
-    </main>
-  </body>
-</html>`);
-});
+app.get('/', (c) => c.html(eta.render('signin')));
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
