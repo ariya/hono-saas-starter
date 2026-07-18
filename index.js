@@ -27,10 +27,12 @@ const createUser = (email, password) => {
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello', 'Hello again', 'Greetings'];
 
-app.get('/', (c) => {
+const renderSignin = (c, options = {}, status = 200) => {
   const title = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
-  return c.html(eta.render('signin', { title }));
-});
+  return c.html(eta.render('signin', { title, ...options }), status);
+};
+
+app.get('/', (c) => renderSignin(c));
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
@@ -38,7 +40,7 @@ app.post('/signin', async (c) => {
   const password = String(body.password || '');
   const user = users.get(email);
   if (!user || user.hash !== hashPassword(password, user.salt)) {
-    return c.text('Invalid email or password', 401);
+    return renderSignin(c, { error: 'Invalid email or password' }, 401);
   }
   return c.text('Signed in');
 });
