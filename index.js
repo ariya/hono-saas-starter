@@ -32,6 +32,17 @@ app.get('/', (c) => {
   return c.html(eta.render('signin', { title }));
 });
 
+app.post('/signin', async (c) => {
+  const body = await c.req.parseBody();
+  const email = String(body.email || '');
+  const password = String(body.password || '');
+  const user = users.get(email);
+  if (!user || user.hash !== hashPassword(password, user.salt)) {
+    return c.text('Invalid email or password', 401);
+  }
+  return c.text('Signed in');
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
