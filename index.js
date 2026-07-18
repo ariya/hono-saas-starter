@@ -106,6 +106,12 @@ app.post('/signin', async (c) => {
   return c.redirect('/profile');
 });
 
+app.get('/profile', (c) => {
+  const email = verifySession(getCookie(c, 'session'));
+  if (!email) return c.redirect('/');
+  return c.text(`Profile of ${email}`);
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
