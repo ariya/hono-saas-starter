@@ -8,7 +8,7 @@
   </head>
   <body>
     <main>
-      <h1>Welcome</h1>
+      <h1><%= it.title %></h1>
       <form method="post" action="/signin">
         <p>
           <label for="email">Email</label>
