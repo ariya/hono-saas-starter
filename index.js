@@ -105,6 +105,12 @@ const verifyCsrfToken = (c, token) => {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
+const sessionEmail = (c) => {
+  const email = verifySession(getCookie(c, 'session'));
+  if (!email || !users.has(email)) return null;
+  return email;
+};
+
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello', 'Hello again', 'Greetings'];
 
 const renderSignin = (c, options = {}, status = 200) => {
@@ -113,7 +119,7 @@ const renderSignin = (c, options = {}, status = 200) => {
 };
 
 app.get('/', (c) => {
-  if (verifySession(getCookie(c, 'session'))) return c.redirect('/profile');
+  if (sessionEmail(c)) return c.redirect('/profile');
   return renderSignin(c);
 });
 
@@ -197,7 +203,7 @@ app.post('/register', async (c) => {
 });
 
 app.get('/profile', (c) => {
-  const email = verifySession(getCookie(c, 'session'));
+  const email = sessionEmail(c);
   if (!email) return c.redirect('/');
   return c.html(eta.render('profile', { email, csrf: issueCsrfToken(c) }));
 });
