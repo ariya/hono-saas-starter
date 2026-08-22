@@ -4,6 +4,8 @@ const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { getCookie } = require('hono/cookie');
+const { bodyLimit } = require('hono/body-limit');
+const { getConnInfo } = require('@hono/node-server/conninfo');
 const { Eta } = require('eta');
 
 const eta = new Eta({ views: path.join(__dirname, 'views') });
@@ -16,6 +18,9 @@ const users = new Map();
 
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 25200;
+const MAX_BODY_SIZE = 16 * 1024;
+const MAX_EMAIL_LENGTH = 254;
+const MAX_PASSWORD_LENGTH = 1024;
 const isLocalDevelopment = process.env.NODE_ENV === 'development';
 const hmacSecret = process.env.HMAC_SECRET || (isLocalDevelopment ? crypto.randomBytes(32).toString('hex') : null);
 
@@ -94,6 +99,7 @@ const verifyCredentials = async (email, password) => {
 const app = new Hono();
 
 app.use(secureHeaders());
+app.use(bodyLimit({ maxSize: MAX_BODY_SIZE }));
 
 app.get('/', (c) => {
   if (verifySession(getCookie(c, SESSION_COOKIE))) return c.redirect('/profile');
@@ -123,7 +129,8 @@ app.post('/', async (c) => {
       403
     );
   if (!verifyCsrfToken(body.csrf)) return csrfFailure();
-  if (email && password && (await verifyCredentials(email, password))) {
+  const withinLimits = email.length <= MAX_EMAIL_LENGTH && password.length <= MAX_PASSWORD_LENGTH;
+  if (withinLimits && email && password && (await verifyCredentials(email, password))) {
     c.header('Set-Cookie', sessionCookie(signSession(email)));
     return c.redirect('/profile');
   }
@@ -163,6 +170,16 @@ app.post('/register', async (c) => {
         csrfToken: signCsrfToken(),
         email,
         error: 'Password must be at least 8 characters long.'
+      },
+      400
+    );
+  }
+  if (email.length > MAX_EMAIL_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+    return renderRegister(
+      {
+        csrfToken: signCsrfToken(),
+        email: '',
+        error: 'Email or password is too long.'
       },
       400
     );
