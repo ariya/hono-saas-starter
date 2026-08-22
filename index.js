@@ -135,7 +135,25 @@ app.post('/register', async (c) => {
       400
     );
   }
-  return c.text('Registration accepted');
+  const email = String(body.email || '')
+    .trim()
+    .toLowerCase();
+  if (!email || !email.includes('@')) {
+    return c.html(eta.render('register', { error: 'Please enter a valid email address.', success: null, csrf }), 400);
+  }
+  if (users.has(email)) {
+    return c.html(
+      eta.render('register', { error: 'An account with this email already exists.', success: null, csrf }),
+      409
+    );
+  }
+  const salt = randomBytes(16).toString('hex');
+  const hash = hashPassword(password, salt);
+  users.set(email, { email, hash, salt });
+  return c.html(
+    eta.render('register', { error: null, success: 'Account created successfully. Redirecting…', csrf }),
+    201
+  );
 });
 
 app.get('/profile', (c) => {

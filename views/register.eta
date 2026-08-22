@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register</title>
   <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css">
+  <% if (it.success) { %>
+  <meta http-equiv="refresh" content="2;url=/">
+  <% } %>
 </head>
 <body>
   <main style="max-width: 24rem; margin: 4rem auto; padding: 0 1rem;">
