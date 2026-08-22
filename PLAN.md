@@ -20,3 +20,29 @@
 - [x] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [x] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
 - [x] Implement the /signout handler to clear session cookies and redirect to the landing page.
+
+## Security Audit Findings
+
+### Critical
+
+- [ ] Add rate limiting to the authentication endpoints (/signin, /register) to prevent brute-force password guessing and registration flooding.
+
+### High
+
+- [ ] Expire and bind CSRF tokens to the browser so leaked tokens cannot be replayed indefinitely.
+- [ ] Set the SameSite attribute on session cookies to harden against cross-site request forgery.
+- [ ] Prevent account enumeration: equalize sign-in timing for unknown users and avoid confirming registered emails.
+- [ ] Cap request body size and input lengths (email/password) to prevent memory and scrypt CPU exhaustion.
+
+### Medium
+
+- [ ] Validate HMAC_SECRET strength (minimum 32 characters) at startup in every environment.
+- [ ] Add a restrictive Content-Security-Policy allowing only self-hosted and Oat CDN assets.
+- [ ] Require the CSRF token on /signout to prevent forced-logout cross-site attacks.
+- [ ] Track signed-out sessions server-side so stolen tokens cannot outlive logout until natural expiry.
+
+### Low
+
+- [ ] Remove the timestamp from the /health response (minor information disclosure).
+- [ ] Use __Host- prefixed session cookies in production.
+- [ ] Centralize and tune scrypt cost parameters instead of relying on library defaults.
