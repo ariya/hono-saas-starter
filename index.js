@@ -42,7 +42,8 @@ app.post('/signin', async (c) => {
     const title = welcomeTitles[randomInt(welcomeTitles.length)];
     return c.html(eta.render('signin', { title, error: 'Invalid email or password.' }), 401);
   }
-  return c.text(`Signed in as ${user.email}`);
+  c.cookie('session', user.email, { httpOnly: true, path: '/' });
+  return c.redirect('/profile');
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
