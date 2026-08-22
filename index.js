@@ -3,6 +3,7 @@ const crypto = require('node:crypto');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
+const { getCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const eta = new Eta({ views: path.join(__dirname, 'views') });
@@ -130,6 +131,12 @@ app.post('/', async (c) => {
     }),
     401
   );
+});
+
+app.get('/profile', (c) => {
+  const email = verifySession(getCookie(c, SESSION_COOKIE));
+  if (!email) return c.redirect('/');
+  return c.html(eta.render('profile', { email }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
