@@ -16,7 +16,12 @@ const users = new Map();
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 25200;
 const isLocalDevelopment = process.env.NODE_ENV === 'development';
-const hmacSecret = 'insecure-placeholder-secret';
+const hmacSecret = process.env.HMAC_SECRET || (isLocalDevelopment ? crypto.randomBytes(32).toString('hex') : null);
+
+if (!hmacSecret) {
+  console.error('HMAC_SECRET environment variable is required');
+  process.exit(1);
+}
 
 const signSession = (email) => {
   const expiresAt = Date.now() + SESSION_MAX_AGE * 1000;
