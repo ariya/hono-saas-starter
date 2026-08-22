@@ -6,11 +6,28 @@
     <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css" />
     <script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
     <title>Profile</title>
+    <style>
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid light-dark(#e2e8f0, #1f2937);
+      }
+      main {
+        max-width: 40rem;
+        margin: 0 auto;
+        padding: 1.25rem;
+      }
+    </style>
   </head>
   <body>
+    <nav>
+      <span><%= it.email %></span>
+    </nav>
     <main>
       <h1>Profile</h1>
-      <p>Signed in as <strong><%= it.email %></strong></p>
+      <p>This is your profile page.</p>
     </main>
   </body>
 </html>
