@@ -1,22 +1,22 @@
-- [ ] Implement the initial landing page route to display the sign-in screen.
+- [x] Implement the initial landing page route to display the sign-in screen.
 - [x] Ensure a mobile-friendly, responsive viewport.
-- [ ] Refactor the sign-in page to use the Eta templating engine for backend rendering.
-- [ ] Implement a dynamic "Welcome" title that selects from 5 randomized options.
-- [ ] Initialize an in-memory User store (supporting email, password hash, and salt).
-- [ ] Create a POST handler for sign-in to validate credentials against the User store.
-- [ ] Implement error handling: Re-render the sign-in page with a clear error message on failure.
-- [ ] Implement success logic: Set a session cookie and redirect authenticated users to /profile.
-- [ ] Configure session cookies with the Secure flag and a 7-hour expiration.
-- [ ] Implement conditional logic to disable the Secure flag during local development.
-- [ ] Use scrypt for password hashing and HMAC for session cookie validation.
-- [ ] Secure the HMAC secret, retrieve from the `HMAC_SECRET` env.
-- [ ] Implement CSRF protection using an HMAC-signed token, passed via a hidden input field.
-- [ ] Build the /profile route with session validation; redirect unauthenticated users to /.
-- [ ] Update the landing page to auto-redirect active sessions to /profile.
-- [ ] Add a "Register for account" link to the sign-in interface.
-- [ ] Create the /register route and an Eta-rendered registration page.
-- [ ] Enforce mininum password length (8 chars) on the server in the registration handler.
-- [ ] Implement registration logic: Save new users, display a success message, and auto-redirect to /.
-- [ ] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
+- [x] Refactor the sign-in page to use the Eta templating engine for backend rendering.
+- [x] Implement a dynamic "Welcome" title that selects from 5 randomized options.
+- [x] Initialize an in-memory User store (supporting email, password hash, and salt).
+- [x] Create a POST handler for sign-in to validate credentials against the User store.
+- [x] Implement error handling: Re-render the sign-in page with a clear error message on failure.
+- [x] Implement success logic: Set a session cookie and redirect authenticated users to /profile.
+- [x] Configure session cookies with the Secure flag and a 7-hour expiration.
+- [x] Implement conditional logic to disable the Secure flag during local development.
+- [x] Use scrypt for password hashing and HMAC for session cookie validation.
+- [x] Secure the HMAC secret, retrieve from the `HMAC_SECRET` env.
+- [x] Implement CSRF protection using an HMAC-signed token, passed via a hidden input field.
+- [x] Build the /profile route with session validation; redirect unauthenticated users to /.
+- [x] Update the landing page to auto-redirect active sessions to /profile.
+- [x] Add a "Register for account" link to the sign-in interface.
+- [x] Create the /register route and an Eta-rendered registration page.
+- [x] Enforce mininum password length (8 chars) on the server in the registration handler.
+- [x] Implement registration logic: Save new users, display a success message, and auto-redirect to /.
+- [x] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [x] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
-- [ ] Implement the /signout handler to clear session cookies and redirect to the landing page.
+- [x] Implement the /signout handler to clear session cookies and redirect to the landing page.
