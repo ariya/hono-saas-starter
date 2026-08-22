@@ -2,7 +2,7 @@ const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
-const { randomInt, scryptSync, timingSafeEqual, createHmac } = require('crypto');
+const { randomInt, randomBytes, scryptSync, timingSafeEqual, createHmac } = require('crypto');
 
 const eta = new Eta({ views: 'views' });
 
@@ -14,7 +14,12 @@ const isProd = process.env.NODE_ENV === 'production';
 
 const sessionDurationMs = 7 * 60 * 60 * 1000;
 
-const hmacSecret = 'change-me';
+const hmacSecret = process.env.HMAC_SECRET || (isProd ? null : randomBytes(32).toString('hex'));
+
+if (!hmacSecret) {
+  console.error('Refusing to start: HMAC_SECRET environment variable is required in production');
+  process.exit(1);
+}
 
 function hashPassword(password, salt) {
   return scryptSync(password, salt, 64).toString('hex');
