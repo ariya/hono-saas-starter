@@ -74,10 +74,10 @@ const verifySession = (cookieValue) => {
 const sessionCookie = (value) =>
   `${SESSION_COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly;${
     isLocalDevelopment ? '' : ' Secure;'
-  } Max-Age=${SESSION_MAX_AGE}`;
+  } SameSite=Lax; Max-Age=${SESSION_MAX_AGE}`;
 
 const expiredSessionCookie = () =>
-  `${SESSION_COOKIE}=; Path=/; HttpOnly;${isLocalDevelopment ? '' : ' Secure;'} Max-Age=0`;
+  `${SESSION_COOKIE}=; Path=/; HttpOnly;${isLocalDevelopment ? '' : ' Secure;'} SameSite=Lax; Max-Age=0`;
 
 const hashPassword = (password, salt) =>
   new Promise((resolve, reject) =>
