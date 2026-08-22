@@ -4,22 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css" />
+    <link rel="stylesheet" href="/styles.css" />
     <script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
     <title>Profile</title>
-    <style>
-      nav {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.75rem 1.25rem;
-        border-bottom: 1px solid light-dark(#e2e8f0, #1f2937);
-      }
-      main {
-        max-width: 40rem;
-        margin: 0 auto;
-        padding: 1.25rem;
-      }
-    </style>
   </head>
   <body>
     <nav>

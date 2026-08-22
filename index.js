@@ -14,6 +14,19 @@ const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see yo
 
 const welcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
+const styles = `nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid light-dark(#e2e8f0, #1f2937);
+}
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1.25rem;
+}`;
+
 const users = new Map();
 
 const SESSION_COOKIE = 'session';
@@ -136,8 +149,23 @@ const verifyCredentials = async (email, password) => {
 
 const app = new Hono();
 
-app.use(secureHeaders());
+app.use(
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", 'https://unpkg.com'],
+      styleSrc: ["'self'", 'https://unpkg.com'],
+      imgSrc: ["'self'", 'data:'],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"]
+    }
+  })
+);
 app.use(bodyLimit({ maxSize: MAX_BODY_SIZE }));
+
+app.get('/styles.css', (c) => c.body(styles, 200, { 'Content-Type': 'text/css; charset=utf-8' }));
 
 app.get('/', (c) => {
   if (verifySession(getCookie(c, SESSION_COOKIE))) return c.redirect('/profile');
