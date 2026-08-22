@@ -134,6 +134,8 @@ app.post('/', async (c) => {
   );
 });
 
+app.get('/register', (c) => c.html(eta.render('register', { csrfToken: signCsrfToken() })));
+
 app.get('/profile', (c) => {
   const email = verifySession(getCookie(c, SESSION_COOKIE));
   if (!email) return c.redirect('/');

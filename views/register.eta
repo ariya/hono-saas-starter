@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css" />
+    <script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
+    <title>Register</title>
+  </head>
+  <body>
+    <main>
+      <h1>Create an account</h1>
+      <% if (it.error) { %>
+      <p role="alert"><%= it.error %></p>
+      <% } %>
+      <form method="post" action="/register">
+        <input type="hidden" name="csrf" value="<%= it.csrfToken %>" />
+        <label>
+          Email
+          <input type="email" name="email" value="<%= it.email || '' %>" autocomplete="email" required />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" minlength="8" autocomplete="new-password" required />
+        </label>
+        <button type="submit">Register</button>
+      </form>
+      <p><a href="/">Back to sign in</a></p>
+    </main>
+  </body>
+</html>
