@@ -4,7 +4,7 @@ const { secureHeaders } = require('hono/secure-headers');
 const { bodyLimit } = require('hono/body-limit');
 const { getCookie, setCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
-const { randomInt, randomBytes, scryptSync, timingSafeEqual, createHmac } = require('crypto');
+const { randomInt, randomBytes, scryptSync, timingSafeEqual, createHmac, createHash } = require('crypto');
 
 const eta = new Eta({ views: 'views' });
 
@@ -109,6 +109,8 @@ function allowRequest(key) {
   return entry.count <= rateLimitMax;
 }
 
+const revokedSessions = new Map();
+
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of rateLimits) {
@@ -116,7 +118,29 @@ setInterval(() => {
       rateLimits.delete(key);
     }
   }
+  for (const [key, exp] of revokedSessions) {
+    if (now >= exp) {
+      revokedSessions.delete(key);
+    }
+  }
 }, rateLimitWindowMs).unref();
+
+function sessionFingerprint(payload) {
+  return createHash('sha256').update(payload).digest('hex');
+}
+
+function revokeSession(token) {
+  if (typeof token !== 'string') return;
+  const dot = token.lastIndexOf('.');
+  if (dot < 1) return;
+  const payload = token.slice(0, dot);
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (typeof data.exp === 'number') {
+      revokedSessions.set(sessionFingerprint(payload), data.exp);
+    }
+  } catch {}
+}
 
 function signSession(email) {
   const payload = Buffer.from(JSON.stringify({ email, exp: Date.now() + sessionDurationMs })).toString('base64url');
@@ -139,6 +163,7 @@ function verifySession(token) {
     if (typeof data.email !== 'string' || typeof data.exp !== 'number' || Date.now() > data.exp) {
       return null;
     }
+    if (revokedSessions.has(sessionFingerprint(payload))) return null;
     return data.email;
   } catch {
     return null;
@@ -271,6 +296,7 @@ app.post('/signout', async (c) => {
   if (!verifyCsrfToken(body._csrf, getCookie(c, 'csrf'))) {
     return c.redirect('/');
   }
+  revokeSession(getCookie(c, 'session'));
   deleteCookie(c, 'session', { path: '/', httpOnly: true, secure: isProd });
   return c.redirect('/');
 });
