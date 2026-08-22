@@ -25,7 +25,7 @@
 
 ### Critical
 
-- [ ] Rate-limit the sign-in and registration endpoints to block brute-force, credential stuffing, and mass account creation.
+- [x] Rate-limit the sign-in and registration endpoints to block brute-force, credential stuffing, and mass account creation.
 - [x] Enforce a request body size limit and cap email/password lengths to prevent memory and CPU exhaustion (DoS).
 - [x] Upgrade hono and @hono/node-server to remediate published high/moderate security advisories.
 

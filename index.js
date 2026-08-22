@@ -21,6 +21,10 @@ const SESSION_MAX_AGE = 25200;
 const MAX_BODY_SIZE = 16 * 1024;
 const MAX_EMAIL_LENGTH = 254;
 const MAX_PASSWORD_LENGTH = 1024;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const SIGNIN_RATE_LIMIT = 10;
+const REGISTER_RATE_LIMIT = 5;
+const RATE_LIMIT_MAX_TRACKED = 10000;
 const isLocalDevelopment = process.env.NODE_ENV === 'development';
 const hmacSecret = process.env.HMAC_SECRET || (isLocalDevelopment ? crypto.randomBytes(32).toString('hex') : null);
 
@@ -86,6 +90,35 @@ const saveUser = async (email, password) => {
   users.set(email, { email, passwordHash, salt });
 };
 
+const rateBuckets = new Map();
+
+const clientAddress = (c) => {
+  try {
+    return getConnInfo(c).remote.address || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+};
+
+const takeRateToken = (key, limit) => {
+  const now = Date.now();
+  if (rateBuckets.size > RATE_LIMIT_MAX_TRACKED) {
+    for (const [trackedKey, bucket] of rateBuckets) {
+      if (bucket.resetAt <= now) rateBuckets.delete(trackedKey);
+    }
+  }
+  const bucket = rateBuckets.get(key);
+  if (!bucket || bucket.resetAt <= now) {
+    rateBuckets.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { limited: false, retryAfter: Math.ceil(RATE_LIMIT_WINDOW_MS / 1000) };
+  }
+  bucket.count += 1;
+  return {
+    limited: bucket.count > limit,
+    retryAfter: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))
+  };
+};
+
 const verifyCredentials = async (email, password) => {
   const user = users.get(email);
   if (!user) return false;
@@ -113,6 +146,18 @@ app.get('/', (c) => {
 });
 
 app.post('/', async (c) => {
+  const rate = takeRateToken(`signin:${clientAddress(c)}`, SIGNIN_RATE_LIMIT);
+  if (rate.limited) {
+    c.header('Retry-After', String(rate.retryAfter));
+    return c.html(
+      eta.render('signin', {
+        welcome: welcomeTitle(),
+        csrfToken: signCsrfToken(),
+        error: 'Too many attempts. Please try again later.'
+      }),
+      429
+    );
+  }
   const body = await c.req.parseBody();
   const email = String(body.email || '')
     .trim()
@@ -148,6 +193,17 @@ app.post('/', async (c) => {
 app.get('/register', (c) => c.html(eta.render('register', { csrfToken: signCsrfToken() })));
 
 app.post('/register', async (c) => {
+  const rate = takeRateToken(`register:${clientAddress(c)}`, REGISTER_RATE_LIMIT);
+  if (rate.limited) {
+    c.header('Retry-After', String(rate.retryAfter));
+    return c.html(
+      eta.render('register', {
+        csrfToken: signCsrfToken(),
+        error: 'Too many attempts. Please try again later.'
+      }),
+      429
+    );
+  }
   const body = await c.req.parseBody();
   const email = String(body.email || '')
     .trim()
