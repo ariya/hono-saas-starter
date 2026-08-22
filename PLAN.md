@@ -32,7 +32,7 @@
 - [x] Expire and bind CSRF tokens to the browser so leaked tokens cannot be replayed indefinitely.
 - [x] Set the SameSite attribute on session cookies to harden against cross-site request forgery.
 - [x] Prevent account enumeration: equalize sign-in timing for unknown users and avoid confirming registered emails.
-- [ ] Cap request body size and input lengths (email/password) to prevent memory and scrypt CPU exhaustion.
+- [x] Cap request body size and input lengths (email/password) to prevent memory and scrypt CPU exhaustion.
 
 ### Medium
 

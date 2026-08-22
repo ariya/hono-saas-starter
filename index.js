@@ -1,6 +1,7 @@
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
+const { bodyLimit } = require('hono/body-limit');
 const { getCookie, setCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 const { randomInt, randomBytes, scryptSync, timingSafeEqual, createHmac } = require('crypto');
@@ -15,6 +16,9 @@ const isProd = process.env.NODE_ENV === 'production';
 
 const sessionDurationMs = 7 * 60 * 60 * 1000;
 const csrfDurationMs = 2 * 60 * 60 * 1000;
+const maxBodyBytes = 16 * 1024;
+const maxEmailLength = 254;
+const maxPasswordLength = 256;
 
 const hmacSecret = process.env.HMAC_SECRET || (isProd ? null : randomBytes(32).toString('hex'));
 
@@ -138,6 +142,7 @@ function verifySession(token) {
 const app = new Hono();
 
 app.use(secureHeaders());
+app.use(bodyLimit({ maxSize: maxBodyBytes }));
 
 app.get('/', (c) => {
   if (verifySession(getCookie(c, 'session'))) {
@@ -160,7 +165,13 @@ app.post('/signin', async (c) => {
     const title = welcomeTitles[randomInt(welcomeTitles.length)];
     return c.html(eta.render('signin', { title, error: 'Session expired. Please try again.', csrf }), 403);
   }
-  const user = verifyUser(body.email, body.password || '');
+  const email = String(body.email || '');
+  const password = String(body.password || '');
+  if (email.length > maxEmailLength || password.length > maxPasswordLength) {
+    const title = welcomeTitles[randomInt(welcomeTitles.length)];
+    return c.html(eta.render('signin', { title, error: 'Invalid email or password.', csrf }), 401);
+  }
+  const user = verifyUser(email, password);
   if (!user) {
     const title = welcomeTitles[randomInt(welcomeTitles.length)];
     return c.html(eta.render('signin', { title, error: 'Invalid email or password.', csrf }), 401);
@@ -200,10 +211,16 @@ app.post('/register', async (c) => {
       400
     );
   }
+  if (password.length > maxPasswordLength) {
+    return c.html(
+      eta.render('register', { error: 'Password must be at most 256 characters long.', success: null, csrf }),
+      400
+    );
+  }
   const email = String(body.email || '')
     .trim()
     .toLowerCase();
-  if (!email || !email.includes('@')) {
+  if (!email.includes('@') || email.length > maxEmailLength) {
     return c.html(eta.render('register', { error: 'Please enter a valid email address.', success: null, csrf }), 400);
   }
   const salt = randomBytes(16).toString('hex');
