@@ -20,3 +20,29 @@
 - [x] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [x] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
 - [x] Implement the /signout handler to clear session cookies and redirect to the landing page.
+
+## Security Audit
+
+### Critical
+
+- [ ] Rate-limit the sign-in and registration endpoints to block brute-force, credential stuffing, and mass account creation.
+- [ ] Enforce a request body size limit and cap email/password lengths to prevent memory and CPU exhaustion (DoS).
+- [ ] Upgrade hono and @hono/node-server to remediate published high/moderate security advisories.
+
+### High
+
+- [ ] Reject weak HMAC secrets by enforcing a 32-character minimum length in production.
+- [ ] Add a Content-Security-Policy that restricts script and style sources to the Oat CDN.
+
+### Medium
+
+- [ ] Equalize login response timing (constant-work verification) to prevent user enumeration.
+- [ ] Add the SameSite=Lax attribute to session cookies for layered CSRF protection.
+- [ ] Bind CSRF tokens to the browser via a double-submit cookie to prevent login CSRF.
+- [ ] Send Cache-Control: no-store on authenticated pages to prevent intermediary caching.
+
+### Low
+
+- [ ] Store an opaque identifier instead of the raw email inside the signed session cookie (PII exposure).
+- [ ] Remove the server clock disclosure from the /health endpoint.
+- [ ] Consider a stronger password policy beyond minimum length.
