@@ -2,7 +2,7 @@ const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
-const { randomInt, scryptSync, timingSafeEqual } = require('crypto');
+const { randomInt, scryptSync, timingSafeEqual, createHmac } = require('crypto');
 
 const eta = new Eta({ views: 'views' });
 
@@ -11,6 +11,10 @@ const welcomeTitles = ['Welcome back', 'Hello again', 'Good to see you', 'Hey th
 const users = new Map();
 
 const isProd = process.env.NODE_ENV === 'production';
+
+const sessionDurationMs = 7 * 60 * 60 * 1000;
+
+const hmacSecret = 'change-me';
 
 function hashPassword(password, salt) {
   return scryptSync(password, salt, 64).toString('hex');
@@ -26,6 +30,33 @@ function verifyUser(email, password) {
   const candidate = Buffer.from(hashPassword(password, user.salt), 'hex');
   const stored = Buffer.from(user.hash, 'hex');
   return candidate.length === stored.length && timingSafeEqual(candidate, stored) ? user : null;
+}
+
+function signSession(email) {
+  const payload = Buffer.from(JSON.stringify({ email, exp: Date.now() + sessionDurationMs })).toString('base64url');
+  const sig = createHmac('sha256', hmacSecret).update(payload).digest('base64url');
+  return `${payload}.${sig}`;
+}
+
+function verifySession(token) {
+  if (typeof token !== 'string') return null;
+  const dot = token.lastIndexOf('.');
+  if (dot < 1) return null;
+  const payload = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  const expected = createHmac('sha256', hmacSecret).update(payload).digest('base64url');
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (typeof data.email !== 'string' || typeof data.exp !== 'number' || Date.now() > data.exp) {
+      return null;
+    }
+    return data.email;
+  } catch {
+    return null;
+  }
 }
 
 const app = new Hono();
@@ -44,11 +75,11 @@ app.post('/signin', async (c) => {
     const title = welcomeTitles[randomInt(welcomeTitles.length)];
     return c.html(eta.render('signin', { title, error: 'Invalid email or password.' }), 401);
   }
-  c.cookie('session', user.email, {
+  c.cookie('session', signSession(user.email), {
     httpOnly: true,
     path: '/',
     secure: isProd,
-    maxAge: 7 * 60 * 60
+    maxAge: sessionDurationMs / 1000
   });
   return c.redirect('/profile');
 });
