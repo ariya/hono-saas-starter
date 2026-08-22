@@ -1,7 +1,7 @@
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
-const { getCookie } = require('hono/cookie');
+const { getCookie, setCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 const { randomInt, randomBytes, scryptSync, timingSafeEqual, createHmac } = require('crypto');
 
@@ -109,7 +109,7 @@ app.post('/signin', async (c) => {
     const title = welcomeTitles[randomInt(welcomeTitles.length)];
     return c.html(eta.render('signin', { title, error: 'Invalid email or password.', csrf: createCsrfToken() }), 401);
   }
-  c.cookie('session', signSession(user.email), {
+  setCookie(c, 'session', signSession(user.email), {
     httpOnly: true,
     path: '/',
     secure: isProd,
@@ -165,12 +165,7 @@ app.get('/profile', (c) => {
 });
 
 app.post('/signout', (c) => {
-  c.cookie('session', '', {
-    httpOnly: true,
-    path: '/',
-    secure: isProd,
-    maxAge: 0
-  });
+  deleteCookie(c, 'session', { path: '/', httpOnly: true, secure: isProd });
   return c.redirect('/');
 });
 
