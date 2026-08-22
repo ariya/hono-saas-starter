@@ -29,7 +29,7 @@
 
 ### High
 
-- [ ] Expire and bind CSRF tokens to the browser so leaked tokens cannot be replayed indefinitely.
+- [x] Expire and bind CSRF tokens to the browser so leaked tokens cannot be replayed indefinitely.
 - [ ] Set the SameSite attribute on session cookies to harden against cross-site request forgery.
 - [ ] Prevent account enumeration: equalize sign-in timing for unknown users and avoid confirming registered emails.
 - [ ] Cap request body size and input lengths (email/password) to prevent memory and scrypt CPU exhaustion.

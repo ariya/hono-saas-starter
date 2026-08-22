@@ -14,6 +14,7 @@ const users = new Map();
 const isProd = process.env.NODE_ENV === 'production';
 
 const sessionDurationMs = 7 * 60 * 60 * 1000;
+const csrfDurationMs = 2 * 60 * 60 * 1000;
 
 const hmacSecret = process.env.HMAC_SECRET || (isProd ? null : randomBytes(32).toString('hex'));
 
@@ -38,19 +39,33 @@ function verifyUser(email, password) {
   return candidate.length === stored.length && timingSafeEqual(candidate, stored) ? user : null;
 }
 
-function createCsrfToken() {
-  const nonce = randomBytes(16).toString('base64url');
-  const sig = createHmac('sha256', hmacSecret).update(`csrf:${nonce}`).digest('base64url');
-  return `${nonce}.${sig}`;
+function ensureCsrfSecret(c) {
+  const existing = getCookie(c, 'csrf');
+  if (existing) return existing;
+  const secret = randomBytes(32).toString('base64url');
+  setCookie(c, 'csrf', secret, {
+    httpOnly: true,
+    path: '/',
+    secure: isProd,
+    maxAge: csrfDurationMs / 1000
+  });
+  return secret;
 }
 
-function verifyCsrfToken(token) {
-  if (typeof token !== 'string') return false;
-  const dot = token.lastIndexOf('.');
-  if (dot < 1) return false;
-  const nonce = token.slice(0, dot);
-  const sig = token.slice(dot + 1);
-  const expected = createHmac('sha256', hmacSecret).update(`csrf:${nonce}`).digest('base64url');
+function createCsrfToken(csrfSecret) {
+  const exp = Date.now() + csrfDurationMs;
+  const nonce = randomBytes(16).toString('base64url');
+  const sig = createHmac('sha256', hmacSecret).update(`csrf:${csrfSecret}:${exp}:${nonce}`).digest('base64url');
+  return `${exp}.${nonce}.${sig}`;
+}
+
+function verifyCsrfToken(token, csrfSecret) {
+  if (typeof token !== 'string' || typeof csrfSecret !== 'string' || !csrfSecret) return false;
+  const parts = token.split('.');
+  if (parts.length !== 3) return false;
+  const [exp, nonce, sig] = parts;
+  if (!/^\d+$/.test(exp) || Date.now() > Number(exp)) return false;
+  const expected = createHmac('sha256', hmacSecret).update(`csrf:${csrfSecret}:${exp}:${nonce}`).digest('base64url');
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
@@ -121,23 +136,22 @@ app.get('/', (c) => {
   if (verifySession(getCookie(c, 'session'))) {
     return c.redirect('/profile');
   }
+  const csrfSecret = ensureCsrfSecret(c);
   const title = welcomeTitles[randomInt(welcomeTitles.length)];
-  return c.html(eta.render('signin', { title, error: null, csrf: createCsrfToken() }));
+  return c.html(eta.render('signin', { title, error: null, csrf: createCsrfToken(csrfSecret) }));
 });
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
-  const csrf = createCsrfToken();
+  const csrfSecret = ensureCsrfSecret(c);
+  const csrf = createCsrfToken(csrfSecret);
   if (!allowRequest(`signin:${clientIp(c)}`)) {
     const title = welcomeTitles[randomInt(welcomeTitles.length)];
     return c.html(eta.render('signin', { title, error: 'Too many attempts. Please try again later.', csrf }), 429);
   }
-  if (!verifyCsrfToken(body._csrf)) {
+  if (!verifyCsrfToken(body._csrf, getCookie(c, 'csrf'))) {
     const title = welcomeTitles[randomInt(welcomeTitles.length)];
-    return c.html(
-      eta.render('signin', { title, error: 'Session expired. Please try again.', csrf: createCsrfToken() }),
-      403
-    );
+    return c.html(eta.render('signin', { title, error: 'Session expired. Please try again.', csrf }), 403);
   }
   const user = verifyUser(body.email, body.password || '');
   if (!user) {
@@ -154,19 +168,21 @@ app.post('/signin', async (c) => {
 });
 
 app.get('/register', (c) => {
-  return c.html(eta.render('register', { error: null, success: null, csrf: createCsrfToken() }));
+  const csrfSecret = ensureCsrfSecret(c);
+  return c.html(eta.render('register', { error: null, success: null, csrf: createCsrfToken(csrfSecret) }));
 });
 
 app.post('/register', async (c) => {
   const body = await c.req.parseBody();
-  const csrf = createCsrfToken();
+  const csrfSecret = ensureCsrfSecret(c);
+  const csrf = createCsrfToken(csrfSecret);
   if (!allowRequest(`register:${clientIp(c)}`)) {
     return c.html(
       eta.render('register', { error: 'Too many attempts. Please try again later.', success: null, csrf }),
       429
     );
   }
-  if (!verifyCsrfToken(body._csrf)) {
+  if (!verifyCsrfToken(body._csrf, getCookie(c, 'csrf'))) {
     return c.html(eta.render('register', { error: 'Session expired. Please try again.', success: null, csrf }), 403);
   }
   const password = String(body.password || '');
