@@ -268,6 +268,7 @@ app.post('/register', async (c) => {
 app.get('/profile', (c) => {
   const email = verifySession(getCookie(c, SESSION_COOKIE));
   if (!email) return c.redirect('/');
+  c.header('Cache-Control', 'no-store');
   return renderWithCsrf(c, 'profile', { email });
 });
 
