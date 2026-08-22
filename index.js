@@ -88,6 +88,9 @@ const app = new Hono();
 app.use(secureHeaders());
 
 app.get('/', (c) => {
+  if (verifySession(getCookie(c, 'session'))) {
+    return c.redirect('/profile');
+  }
   const title = welcomeTitles[randomInt(welcomeTitles.length)];
   return c.html(eta.render('signin', { title, error: null, csrf: createCsrfToken() }));
 });
