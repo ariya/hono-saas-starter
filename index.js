@@ -47,6 +47,7 @@ function ensureCsrfSecret(c) {
     httpOnly: true,
     path: '/',
     secure: isProd,
+    sameSite: 'Lax',
     maxAge: csrfDurationMs / 1000
   });
   return secret;
@@ -162,6 +163,7 @@ app.post('/signin', async (c) => {
     httpOnly: true,
     path: '/',
     secure: isProd,
+    sameSite: 'Lax',
     maxAge: sessionDurationMs / 1000
   });
   return c.redirect('/profile');
