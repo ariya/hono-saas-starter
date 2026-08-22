@@ -49,6 +49,9 @@ const sessionCookie = (value) =>
     isLocalDevelopment ? '' : ' Secure;'
   } Max-Age=${SESSION_MAX_AGE}`;
 
+const expiredSessionCookie = () =>
+  `${SESSION_COOKIE}=; Path=/; HttpOnly;${isLocalDevelopment ? '' : ' Secure;'} Max-Age=0`;
+
 const hashPassword = (password, salt) =>
   new Promise((resolve, reject) =>
     crypto.scrypt(password, salt, 64, (err, derivedKey) => (err ? reject(err) : resolve(derivedKey.toString('hex'))))
@@ -192,6 +195,14 @@ app.get('/profile', (c) => {
   const email = verifySession(getCookie(c, SESSION_COOKIE));
   if (!email) return c.redirect('/');
   return c.html(eta.render('profile', { email, csrfToken: signCsrfToken() }));
+});
+
+app.post('/signout', async (c) => {
+  const body = await c.req.parseBody();
+  if (verifyCsrfToken(body.csrf)) {
+    c.header('Set-Cookie', expiredSessionCookie());
+  }
+  return c.redirect('/');
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
