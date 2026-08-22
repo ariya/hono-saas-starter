@@ -20,7 +20,13 @@ const maxBodyBytes = 16 * 1024;
 const maxEmailLength = 254;
 const maxPasswordLength = 256;
 
-const hmacSecret = process.env.HMAC_SECRET || (isProd ? null : randomBytes(32).toString('hex'));
+const providedSecret = process.env.HMAC_SECRET;
+if (providedSecret !== undefined && providedSecret.length < 32) {
+  console.error('Refusing to start: HMAC_SECRET must be at least 32 characters');
+  process.exit(1);
+}
+
+const hmacSecret = providedSecret || (isProd ? null : randomBytes(32).toString('hex'));
 
 if (!hmacSecret) {
   console.error('Refusing to start: HMAC_SECRET environment variable is required in production');
