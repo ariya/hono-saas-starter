@@ -262,10 +262,15 @@ app.get('/profile', (c) => {
   if (!email) {
     return c.redirect('/');
   }
-  return c.html(eta.render('profile', { email }));
+  const csrfSecret = ensureCsrfSecret(c);
+  return c.html(eta.render('profile', { email, csrf: createCsrfToken(csrfSecret) }));
 });
 
-app.post('/signout', (c) => {
+app.post('/signout', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(body._csrf, getCookie(c, 'csrf'))) {
+    return c.redirect('/');
+  }
   deleteCookie(c, 'session', { path: '/', httpOnly: true, secure: isProd });
   return c.redirect('/');
 });
