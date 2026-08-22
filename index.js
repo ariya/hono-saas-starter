@@ -10,6 +10,8 @@ const welcomeTitles = ['Welcome back', 'Hello again', 'Good to see you', 'Hey th
 
 const users = new Map();
 
+const isProd = process.env.NODE_ENV === 'production';
+
 function hashPassword(password, salt) {
   return scryptSync(password, salt, 64).toString('hex');
 }
@@ -42,7 +44,12 @@ app.post('/signin', async (c) => {
     const title = welcomeTitles[randomInt(welcomeTitles.length)];
     return c.html(eta.render('signin', { title, error: 'Invalid email or password.' }), 401);
   }
-  c.cookie('session', user.email, { httpOnly: true, path: '/', secure: true, maxAge: 7 * 60 * 60 });
+  c.cookie('session', user.email, {
+    httpOnly: true,
+    path: '/',
+    secure: isProd,
+    maxAge: 7 * 60 * 60
+  });
   return c.redirect('/profile');
 });
 
