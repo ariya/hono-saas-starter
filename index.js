@@ -8,6 +8,8 @@ const eta = new Eta({ views: 'views' });
 
 const welcomeTitles = ['Welcome back', 'Hello again', 'Good to see you', 'Hey there', 'Greetings'];
 
+const users = new Map();
+
 const app = new Hono();
 
 app.use(secureHeaders());
