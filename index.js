@@ -1,6 +1,7 @@
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
+const { getCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 const { randomInt, randomBytes, scryptSync, timingSafeEqual, createHmac } = require('crypto');
 
@@ -112,6 +113,14 @@ app.post('/signin', async (c) => {
     maxAge: sessionDurationMs / 1000
   });
   return c.redirect('/profile');
+});
+
+app.get('/profile', (c) => {
+  const email = verifySession(getCookie(c, 'session'));
+  if (!email) {
+    return c.redirect('/');
+  }
+  return c.html(eta.render('profile', { email }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
