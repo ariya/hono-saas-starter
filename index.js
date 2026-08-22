@@ -27,13 +27,19 @@ function hashPassword(password, salt) {
   return scryptSync(password, salt, 64).toString('hex');
 }
 
+const dummySalt = randomBytes(16).toString('hex');
+const dummyHash = Buffer.from(hashPassword(randomBytes(32).toString('hex'), dummySalt), 'hex');
+
 function verifyUser(email, password) {
   const user = users.get(
     String(email || '')
       .trim()
       .toLowerCase()
   );
-  if (!user) return null;
+  if (!user) {
+    timingSafeEqual(Buffer.from(hashPassword(password || '', dummySalt), 'hex'), dummyHash);
+    return null;
+  }
   const candidate = Buffer.from(hashPassword(password, user.salt), 'hex');
   const stored = Buffer.from(user.hash, 'hex');
   return candidate.length === stored.length && timingSafeEqual(candidate, stored) ? user : null;
@@ -200,14 +206,14 @@ app.post('/register', async (c) => {
   if (!email || !email.includes('@')) {
     return c.html(eta.render('register', { error: 'Please enter a valid email address.', success: null, csrf }), 400);
   }
-  if (users.has(email)) {
-    return c.html(
-      eta.render('register', { error: 'An account with this email already exists.', success: null, csrf }),
-      409
-    );
-  }
   const salt = randomBytes(16).toString('hex');
   const hash = hashPassword(password, salt);
+  if (users.has(email)) {
+    return c.html(
+      eta.render('register', { error: null, success: 'Account created successfully. Redirecting…', csrf }),
+      201
+    );
+  }
   users.set(email, { email, hash, salt });
   return c.html(
     eta.render('register', { error: null, success: 'Account created successfully. Redirecting…', csrf }),
