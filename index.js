@@ -164,6 +164,16 @@ app.get('/profile', (c) => {
   return c.html(eta.render('profile', { email }));
 });
 
+app.post('/signout', (c) => {
+  c.cookie('session', '', {
+    httpOnly: true,
+    path: '/',
+    secure: isProd,
+    maxAge: 0
+  });
+  return c.redirect('/');
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
