@@ -32,14 +32,15 @@ app.use(secureHeaders());
 
 app.get('/', (c) => {
   const title = welcomeTitles[randomInt(welcomeTitles.length)];
-  return c.html(eta.render('signin', { title }));
+  return c.html(eta.render('signin', { title, error: null }));
 });
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
   const user = verifyUser(body.email, body.password || '');
   if (!user) {
-    return c.text('Invalid credentials', 401);
+    const title = welcomeTitles[randomInt(welcomeTitles.length)];
+    return c.html(eta.render('signin', { title, error: 'Invalid email or password.' }), 401);
   }
   return c.text(`Signed in as ${user.email}`);
 });
