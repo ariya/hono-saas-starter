@@ -136,6 +136,36 @@ app.post('/', async (c) => {
 
 app.get('/register', (c) => c.html(eta.render('register', { csrfToken: signCsrfToken() })));
 
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  const email = String(body.email || '')
+    .trim()
+    .toLowerCase();
+  const password = String(body.password || '');
+  const renderRegister = (data, status) => c.html(eta.render('register', data), status);
+  if (!verifyCsrfToken(body.csrf)) {
+    return renderRegister(
+      {
+        csrfToken: signCsrfToken(),
+        email,
+        error: 'Your request could not be verified. Please try again.'
+      },
+      403
+    );
+  }
+  if (password.length < 8) {
+    return renderRegister(
+      {
+        csrfToken: signCsrfToken(),
+        email,
+        error: 'Password must be at least 8 characters long.'
+      },
+      400
+    );
+  }
+  return c.redirect('/');
+});
+
 app.get('/profile', (c) => {
   const email = verifySession(getCookie(c, SESSION_COOKIE));
   if (!email) return c.redirect('/');
