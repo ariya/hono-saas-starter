@@ -41,6 +41,18 @@ app.use(secureHeaders());
 
 app.get('/', (c) => c.html(eta.render('signin', { welcome: welcomeTitle() })));
 
+app.post('/', async (c) => {
+  const body = await c.req.parseBody();
+  const email = String(body.email || '')
+    .trim()
+    .toLowerCase();
+  const password = String(body.password || '');
+  if (email && password && verifyCredentials(email, password)) {
+    return c.redirect('/profile');
+  }
+  return c.text('Invalid email or password', 401);
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;

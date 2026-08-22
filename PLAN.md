@@ -3,7 +3,7 @@
 - [x] Refactor the sign-in page to use the Eta templating engine for backend rendering.
 - [x] Implement a dynamic "Welcome" title that selects from 5 randomized options.
 - [x] Initialize an in-memory User store (supporting email, password hash, and salt).
-- [ ] Create a POST handler for sign-in to validate credentials against the User store.
+- [x] Create a POST handler for sign-in to validate credentials against the User store.
 - [ ] Implement error handling: Re-render the sign-in page with a clear error message on failure.
 - [ ] Implement success logic: Set a session cookie and redirect authenticated users to /profile.
 - [ ] Configure session cookies with the Secure flag and a 7-hour expiration.
