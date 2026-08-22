@@ -53,6 +53,24 @@ const hashPassword = (password, salt) =>
     crypto.scrypt(password, salt, 64, (err, derivedKey) => (err ? reject(err) : resolve(derivedKey.toString('hex'))))
   );
 
+const signCsrfToken = () => {
+  const payload = `${crypto.randomBytes(16).toString('base64url')}.${Date.now()}`;
+  const signature = crypto.createHmac('sha256', hmacSecret).update(`csrf:${payload}`).digest('base64url');
+  return `${payload}.${signature}`;
+};
+
+const verifyCsrfToken = (token) => {
+  if (typeof token !== 'string') return false;
+  const [nonce, issuedAt, signature] = token.split('.');
+  if (!nonce || !issuedAt || !signature || !/^\d+$/.test(issuedAt)) return false;
+  const payload = `${nonce}.${issuedAt}`;
+  const expected = crypto.createHmac('sha256', hmacSecret).update(`csrf:${payload}`).digest('base64url');
+  const given = Buffer.from(signature);
+  const known = Buffer.from(expected);
+  if (given.length !== known.length || !crypto.timingSafeEqual(given, known)) return false;
+  return Date.now() - Number(issuedAt) <= SESSION_MAX_AGE * 1000;
+};
+
 const saveUser = async (email, password) => {
   const salt = crypto.randomBytes(16).toString('hex');
   const passwordHash = await hashPassword(password, salt);
@@ -73,7 +91,14 @@ const app = new Hono();
 
 app.use(secureHeaders());
 
-app.get('/', (c) => c.html(eta.render('signin', { welcome: welcomeTitle() })));
+app.get('/', (c) =>
+  c.html(
+    eta.render('signin', {
+      welcome: welcomeTitle(),
+      csrfToken: signCsrfToken()
+    })
+  )
+);
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
@@ -81,6 +106,17 @@ app.post('/', async (c) => {
     .trim()
     .toLowerCase();
   const password = String(body.password || '');
+  const csrfFailure = () =>
+    c.html(
+      eta.render('signin', {
+        welcome: welcomeTitle(),
+        email,
+        csrfToken: signCsrfToken(),
+        error: 'Your request could not be verified. Please try again.'
+      }),
+      403
+    );
+  if (!verifyCsrfToken(body.csrf)) return csrfFailure();
   if (email && password && (await verifyCredentials(email, password))) {
     c.header('Set-Cookie', sessionCookie(signSession(email)));
     return c.redirect('/profile');
@@ -89,6 +125,7 @@ app.post('/', async (c) => {
     eta.render('signin', {
       welcome: welcomeTitle(),
       email,
+      csrfToken: signCsrfToken(),
       error: 'Invalid email or password.'
     }),
     401
