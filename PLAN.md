@@ -36,7 +36,7 @@
 
 ### Medium
 
-- [ ] Equalize login response timing (constant-work verification) to prevent user enumeration.
+- [x] Equalize login response timing (constant-work verification) to prevent user enumeration.
 - [ ] Add the SameSite=Lax attribute to session cookies for layered CSRF protection.
 - [ ] Bind CSRF tokens to the browser via a double-submit cookie to prevent login CSRF.
 - [ ] Send Cache-Control: no-store on authenticated pages to prevent intermediary caching.

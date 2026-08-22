@@ -84,6 +84,9 @@ const hashPassword = (password, salt) =>
     crypto.scrypt(password, salt, 64, (err, derivedKey) => (err ? reject(err) : resolve(derivedKey.toString('hex'))))
   );
 
+const DUMMY_SALT = crypto.randomBytes(16).toString('hex');
+const dummyHash = hashPassword(crypto.randomBytes(32).toString('hex'), DUMMY_SALT);
+
 const signCsrfToken = () => {
   const payload = `${crypto.randomBytes(16).toString('base64url')}.${Date.now()}`;
   const signature = crypto.createHmac('sha256', hmacSecret).update(`csrf:${payload}`).digest('base64url');
@@ -139,12 +142,13 @@ const takeRateToken = (key, limit) => {
 
 const verifyCredentials = async (email, password) => {
   const user = users.get(email);
-  if (!user) return false;
-  const passwordHash = await hashPassword(password, user.salt);
-  return (
-    Buffer.byteLength(passwordHash) === Buffer.byteLength(user.passwordHash) &&
-    crypto.timingSafeEqual(Buffer.from(passwordHash), Buffer.from(user.passwordHash))
-  );
+  const salt = user ? user.salt : DUMMY_SALT;
+  const expectedHash = user ? user.passwordHash : await dummyHash;
+  const passwordHash = await hashPassword(password, salt);
+  const matches =
+    Buffer.byteLength(passwordHash) === Buffer.byteLength(expectedHash) &&
+    crypto.timingSafeEqual(Buffer.from(passwordHash), Buffer.from(expectedHash));
+  return matches && Boolean(user);
 };
 
 const app = new Hono();
