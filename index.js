@@ -122,6 +122,22 @@ app.get('/register', (c) => {
   return c.html(eta.render('register', { error: null, success: null, csrf: createCsrfToken() }));
 });
 
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  const csrf = createCsrfToken();
+  if (!verifyCsrfToken(body._csrf)) {
+    return c.html(eta.render('register', { error: 'Session expired. Please try again.', success: null, csrf }), 403);
+  }
+  const password = String(body.password || '');
+  if (password.length < 8) {
+    return c.html(
+      eta.render('register', { error: 'Password must be at least 8 characters long.', success: null, csrf }),
+      400
+    );
+  }
+  return c.text('Registration accepted');
+});
+
 app.get('/profile', (c) => {
   const email = verifySession(getCookie(c, 'session'));
   if (!email) {
