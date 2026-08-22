@@ -48,6 +48,7 @@ app.post('/', async (c) => {
     .toLowerCase();
   const password = String(body.password || '');
   if (email && password && verifyCredentials(email, password)) {
+    c.header('Set-Cookie', `session=${encodeURIComponent(email)}; Path=/; HttpOnly`);
     return c.redirect('/profile');
   }
   return c.html(
