@@ -16,28 +16,48 @@ const users = new Map();
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 25200;
 const isLocalDevelopment = process.env.NODE_ENV === 'development';
+const hmacSecret = 'insecure-placeholder-secret';
+
+const signSession = (email) => {
+  const expiresAt = Date.now() + SESSION_MAX_AGE * 1000;
+  const payload = `${Buffer.from(email).toString('base64url')}.${expiresAt}`;
+  const signature = crypto.createHmac('sha256', hmacSecret).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+};
+
+const verifySession = (cookieValue) => {
+  if (!cookieValue) return null;
+  const [emailEncoded, expiresAt, signature] = cookieValue.split('.');
+  if (!emailEncoded || !expiresAt || !signature) return null;
+  const payload = `${emailEncoded}.${expiresAt}`;
+  const expected = crypto.createHmac('sha256', hmacSecret).update(payload).digest('base64url');
+  const given = Buffer.from(signature);
+  const known = Buffer.from(expected);
+  if (given.length !== known.length || !crypto.timingSafeEqual(given, known)) return null;
+  if (!/^\d+$/.test(expiresAt) || Date.now() > Number(expiresAt)) return null;
+  return Buffer.from(emailEncoded, 'base64url').toString('utf8');
+};
 
 const sessionCookie = (value) =>
   `${SESSION_COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly;${
     isLocalDevelopment ? '' : ' Secure;'
   } Max-Age=${SESSION_MAX_AGE}`;
 
-const saveUser = (email, password) => {
+const hashPassword = (password, salt) =>
+  new Promise((resolve, reject) =>
+    crypto.scrypt(password, salt, 64, (err, derivedKey) => (err ? reject(err) : resolve(derivedKey.toString('hex'))))
+  );
+
+const saveUser = async (email, password) => {
   const salt = crypto.randomBytes(16).toString('hex');
-  const passwordHash = crypto
-    .createHash('sha256')
-    .update(salt + password)
-    .digest('hex');
+  const passwordHash = await hashPassword(password, salt);
   users.set(email, { email, passwordHash, salt });
 };
 
-const verifyCredentials = (email, password) => {
+const verifyCredentials = async (email, password) => {
   const user = users.get(email);
   if (!user) return false;
-  const passwordHash = crypto
-    .createHash('sha256')
-    .update(user.salt + password)
-    .digest('hex');
+  const passwordHash = await hashPassword(password, user.salt);
   return (
     Buffer.byteLength(passwordHash) === Buffer.byteLength(user.passwordHash) &&
     crypto.timingSafeEqual(Buffer.from(passwordHash), Buffer.from(user.passwordHash))
@@ -56,8 +76,8 @@ app.post('/', async (c) => {
     .trim()
     .toLowerCase();
   const password = String(body.password || '');
-  if (email && password && verifyCredentials(email, password)) {
-    c.header('Set-Cookie', sessionCookie(email));
+  if (email && password && (await verifyCredentials(email, password))) {
+    c.header('Set-Cookie', sessionCookie(signSession(email)));
     return c.redirect('/profile');
   }
   return c.html(
