@@ -37,7 +37,7 @@
 ### Medium
 
 - [ ] Validate HMAC_SECRET strength (minimum 32 characters) at startup in every environment.
-- [ ] Add a restrictive Content-Security-Policy allowing only self-hosted and Oat CDN assets.
+- [x] Add a restrictive Content-Security-Policy allowing only self-hosted and Oat CDN assets.
 - [ ] Require the CSRF token on /signout to prevent forced-logout cross-site attacks.
 - [ ] Track signed-out sessions server-side so stolen tokens cannot outlive logout until natural expiry.
 
