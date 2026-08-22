@@ -50,7 +50,14 @@ app.post('/', async (c) => {
   if (email && password && verifyCredentials(email, password)) {
     return c.redirect('/profile');
   }
-  return c.text('Invalid email or password', 401);
+  return c.html(
+    eta.render('signin', {
+      welcome: welcomeTitle(),
+      email,
+      error: 'Invalid email or password.'
+    }),
+    401
+  );
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));

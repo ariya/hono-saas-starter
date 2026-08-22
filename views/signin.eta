@@ -10,10 +10,19 @@
   <body>
     <main>
       <h1><%= it.welcome %></h1>
+      <% if (it.error) { %>
+      <p role="alert"><%= it.error %></p>
+      <% } %>
       <form method="post" action="/">
         <label>
           Email
-          <input type="email" name="email" autocomplete="username" required />
+          <input
+            type="email"
+            name="email"
+            value="<%= it.email || '' %>"
+            autocomplete="username"
+            required
+          />
         </label>
         <label>
           Password
