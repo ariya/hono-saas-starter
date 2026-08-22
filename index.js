@@ -33,6 +33,11 @@ if (!hmacSecret) {
   process.exit(1);
 }
 
+if (!isLocalDevelopment && hmacSecret.length < 32) {
+  console.error('HMAC_SECRET must be at least 32 characters long');
+  process.exit(1);
+}
+
 const signSession = (email) => {
   const expiresAt = Date.now() + SESSION_MAX_AGE * 1000;
   const payload = `${Buffer.from(email).toString('base64url')}.${expiresAt}`;

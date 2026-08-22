@@ -31,7 +31,7 @@
 
 ### High
 
-- [ ] Reject weak HMAC secrets by enforcing a 32-character minimum length in production.
+- [x] Reject weak HMAC secrets by enforcing a 32-character minimum length in production.
 - [ ] Add a Content-Security-Policy that restricts script and style sources to the Oat CDN.
 
 ### Medium
