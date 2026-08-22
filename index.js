@@ -92,14 +92,15 @@ const app = new Hono();
 
 app.use(secureHeaders());
 
-app.get('/', (c) =>
-  c.html(
+app.get('/', (c) => {
+  if (verifySession(getCookie(c, SESSION_COOKIE))) return c.redirect('/profile');
+  return c.html(
     eta.render('signin', {
       welcome: welcomeTitle(),
       csrfToken: signCsrfToken()
     })
-  )
-);
+  );
+});
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
