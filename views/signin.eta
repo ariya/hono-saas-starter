@@ -17,13 +17,7 @@
         <input type="hidden" name="csrf" value="<%= it.csrfToken %>" />
         <label>
           Email
-          <input
-            type="email"
-            name="email"
-            value="<%= it.email || '' %>"
-            autocomplete="username"
-            required
-          />
+          <input type="email" name="email" value="<%= it.email || '' %>" autocomplete="username" required />
         </label>
         <label>
           Password
@@ -31,6 +25,7 @@
         </label>
         <button type="submit">Sign In</button>
       </form>
+      <p><a href="/register">Register for account</a></p>
     </main>
   </body>
 </html>
