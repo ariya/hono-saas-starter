@@ -11,6 +11,30 @@ const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see yo
 
 const welcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
+const users = new Map();
+
+const saveUser = (email, password) => {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = crypto
+    .createHash('sha256')
+    .update(salt + password)
+    .digest('hex');
+  users.set(email, { email, passwordHash, salt });
+};
+
+const verifyCredentials = (email, password) => {
+  const user = users.get(email);
+  if (!user) return false;
+  const passwordHash = crypto
+    .createHash('sha256')
+    .update(user.salt + password)
+    .digest('hex');
+  return (
+    Buffer.byteLength(passwordHash) === Buffer.byteLength(user.passwordHash) &&
+    crypto.timingSafeEqual(Buffer.from(passwordHash), Buffer.from(user.passwordHash))
+  );
+};
+
 const app = new Hono();
 
 app.use(secureHeaders());
