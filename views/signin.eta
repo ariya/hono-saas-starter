@@ -10,7 +10,9 @@
   <body>
     <main>
       <h1><%= it.welcome %></h1>
-      <% if (it.error) { %>
+      <% if (it.notice) { %>
+      <p role="status"><%= it.notice %></p>
+      <% } %> <% if (it.error) { %>
       <p role="alert"><%= it.error %></p>
       <% } %>
       <form method="post" action="/">

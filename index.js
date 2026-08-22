@@ -97,7 +97,8 @@ app.get('/', (c) => {
   return c.html(
     eta.render('signin', {
       welcome: welcomeTitle(),
-      csrfToken: signCsrfToken()
+      csrfToken: signCsrfToken(),
+      notice: c.req.query('registered') === '1' ? 'Account created successfully. Please sign in.' : undefined
     })
   );
 });
@@ -163,7 +164,28 @@ app.post('/register', async (c) => {
       400
     );
   }
-  return c.redirect('/');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return renderRegister(
+      {
+        csrfToken: signCsrfToken(),
+        email: '',
+        error: 'Please enter a valid email address.'
+      },
+      400
+    );
+  }
+  if (users.has(email)) {
+    return renderRegister(
+      {
+        csrfToken: signCsrfToken(),
+        email,
+        error: 'An account with this email already exists.'
+      },
+      409
+    );
+  }
+  await saveUser(email, password);
+  return c.redirect('/?registered=1');
 });
 
 app.get('/profile', (c) => {
