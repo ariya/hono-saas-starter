@@ -37,6 +37,24 @@ function verifyUser(email, password) {
   return candidate.length === stored.length && timingSafeEqual(candidate, stored) ? user : null;
 }
 
+function createCsrfToken() {
+  const nonce = randomBytes(16).toString('base64url');
+  const sig = createHmac('sha256', hmacSecret).update(`csrf:${nonce}`).digest('base64url');
+  return `${nonce}.${sig}`;
+}
+
+function verifyCsrfToken(token) {
+  if (typeof token !== 'string') return false;
+  const dot = token.lastIndexOf('.');
+  if (dot < 1) return false;
+  const nonce = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  const expected = createHmac('sha256', hmacSecret).update(`csrf:${nonce}`).digest('base64url');
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 function signSession(email) {
   const payload = Buffer.from(JSON.stringify({ email, exp: Date.now() + sessionDurationMs })).toString('base64url');
   const sig = createHmac('sha256', hmacSecret).update(payload).digest('base64url');
@@ -70,15 +88,22 @@ app.use(secureHeaders());
 
 app.get('/', (c) => {
   const title = welcomeTitles[randomInt(welcomeTitles.length)];
-  return c.html(eta.render('signin', { title, error: null }));
+  return c.html(eta.render('signin', { title, error: null, csrf: createCsrfToken() }));
 });
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
+  if (!verifyCsrfToken(body._csrf)) {
+    const title = welcomeTitles[randomInt(welcomeTitles.length)];
+    return c.html(
+      eta.render('signin', { title, error: 'Session expired. Please try again.', csrf: createCsrfToken() }),
+      403
+    );
+  }
   const user = verifyUser(body.email, body.password || '');
   if (!user) {
     const title = welcomeTitles[randomInt(welcomeTitles.length)];
-    return c.html(eta.render('signin', { title, error: 'Invalid email or password.' }), 401);
+    return c.html(eta.render('signin', { title, error: 'Invalid email or password.', csrf: createCsrfToken() }), 401);
   }
   c.cookie('session', signSession(user.email), {
     httpOnly: true,

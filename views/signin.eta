@@ -13,6 +13,7 @@
     <div role="alert" class="alert"><%= it.error %></div>
     <% } %>
     <form method="post" action="/signin">
+      <input type="hidden" name="_csrf" value="<%= it.csrf %>">
       <label for="email">Email</label>
       <input type="email" id="email" name="email" required autofocus>
       <label for="password">Password</label>
