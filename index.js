@@ -13,6 +13,15 @@ const welcomeTitle = () => welcomeTitles[Math.floor(Math.random() * welcomeTitle
 
 const users = new Map();
 
+const SESSION_COOKIE = 'session';
+const SESSION_MAX_AGE = 25200;
+const isLocalDevelopment = process.env.NODE_ENV === 'development';
+
+const sessionCookie = (value) =>
+  `${SESSION_COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly;${
+    isLocalDevelopment ? '' : ' Secure;'
+  } Max-Age=${SESSION_MAX_AGE}`;
+
 const saveUser = (email, password) => {
   const salt = crypto.randomBytes(16).toString('hex');
   const passwordHash = crypto
@@ -48,7 +57,7 @@ app.post('/', async (c) => {
     .toLowerCase();
   const password = String(body.password || '');
   if (email && password && verifyCredentials(email, password)) {
-    c.header('Set-Cookie', `session=${encodeURIComponent(email)}; Path=/; HttpOnly; Secure; Max-Age=25200`);
+    c.header('Set-Cookie', sessionCookie(email));
     return c.redirect('/profile');
   }
   return c.html(
