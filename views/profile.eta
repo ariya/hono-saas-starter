@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css">
 </head>
 <body>
-  <nav style="display: flex; justify-content: space-between; align-items: center; padding: 1rem;">
+  <nav style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--muted-border-color);">
     <strong><%= it.email %></strong>
     <form method="post" action="/signout">
       <button type="submit">Sign Out</button>
