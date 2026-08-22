@@ -56,6 +56,36 @@ function verifyCsrfToken(token) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+const rateLimits = new Map();
+const rateLimitMax = 5;
+const rateLimitWindowMs = 15 * 60 * 1000;
+
+function clientIp(c) {
+  const forwarded = c.req.header('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return c.env?.incoming?.socket?.remoteAddress || 'unknown';
+}
+
+function allowRequest(key) {
+  const now = Date.now();
+  const entry = rateLimits.get(key);
+  if (!entry || now >= entry.resetAt) {
+    rateLimits.set(key, { count: 1, resetAt: now + rateLimitWindowMs });
+    return true;
+  }
+  entry.count += 1;
+  return entry.count <= rateLimitMax;
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimits) {
+    if (now >= entry.resetAt) {
+      rateLimits.delete(key);
+    }
+  }
+}, rateLimitWindowMs).unref();
+
 function signSession(email) {
   const payload = Buffer.from(JSON.stringify({ email, exp: Date.now() + sessionDurationMs })).toString('base64url');
   const sig = createHmac('sha256', hmacSecret).update(payload).digest('base64url');
@@ -97,6 +127,11 @@ app.get('/', (c) => {
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
+  const csrf = createCsrfToken();
+  if (!allowRequest(`signin:${clientIp(c)}`)) {
+    const title = welcomeTitles[randomInt(welcomeTitles.length)];
+    return c.html(eta.render('signin', { title, error: 'Too many attempts. Please try again later.', csrf }), 429);
+  }
   if (!verifyCsrfToken(body._csrf)) {
     const title = welcomeTitles[randomInt(welcomeTitles.length)];
     return c.html(
@@ -107,7 +142,7 @@ app.post('/signin', async (c) => {
   const user = verifyUser(body.email, body.password || '');
   if (!user) {
     const title = welcomeTitles[randomInt(welcomeTitles.length)];
-    return c.html(eta.render('signin', { title, error: 'Invalid email or password.', csrf: createCsrfToken() }), 401);
+    return c.html(eta.render('signin', { title, error: 'Invalid email or password.', csrf }), 401);
   }
   setCookie(c, 'session', signSession(user.email), {
     httpOnly: true,
@@ -125,6 +160,12 @@ app.get('/register', (c) => {
 app.post('/register', async (c) => {
   const body = await c.req.parseBody();
   const csrf = createCsrfToken();
+  if (!allowRequest(`register:${clientIp(c)}`)) {
+    return c.html(
+      eta.render('register', { error: 'Too many attempts. Please try again later.', success: null, csrf }),
+      429
+    );
+  }
   if (!verifyCsrfToken(body._csrf)) {
     return c.html(eta.render('register', { error: 'Session expired. Please try again.', success: null, csrf }), 403);
   }

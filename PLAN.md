@@ -25,7 +25,7 @@
 
 ### Critical
 
-- [ ] Add rate limiting to the authentication endpoints (/signin, /register) to prevent brute-force password guessing and registration flooding.
+- [x] Add rate limiting to the authentication endpoints (/signin, /register) to prevent brute-force password guessing and registration flooding.
 
 ### High
 
