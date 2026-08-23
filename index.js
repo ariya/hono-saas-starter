@@ -1,5 +1,5 @@
 const path = require('node:path');
-const { randomBytes, scryptSync, timingSafeEqual } = require('node:crypto');
+const { createHmac, randomBytes, scryptSync, timingSafeEqual } = require('node:crypto');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
@@ -12,6 +12,7 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const isDevelopment = process.env.NODE_ENV === 'development';
+const hmacSecret = randomBytes(32);
 
 const users = new Map();
 
@@ -38,6 +39,34 @@ if (process.env.DEMO_EMAIL && process.env.DEMO_PASSWORD) {
   createUser(process.env.DEMO_EMAIL, process.env.DEMO_PASSWORD);
 }
 
+const sign = (value) => createHmac('sha256', hmacSecret).update(value).digest('base64url');
+
+const createSession = (email) => {
+  const payload = `${Buffer.from(email).toString('base64url')}.${Date.now() + SESSION_MAX_AGE * 1000}`;
+  return `${payload}.${sign(payload)}`;
+};
+
+const readSession = (token) => {
+  if (typeof token !== 'string') {
+    return null;
+  }
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    return null;
+  }
+  const payload = `${parts[0]}.${parts[1]}`;
+  const expected = Buffer.from(sign(payload));
+  const actual = Buffer.from(parts[2]);
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+    return null;
+  }
+  const expiresAt = Number(parts[1]);
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) {
+    return null;
+  }
+  return findUser(Buffer.from(parts[0], 'base64url').toString()) || null;
+};
+
 const greetings = ['Welcome', 'Welcome back', 'Good to see you', 'Hello again', 'Nice to have you back'];
 
 const randomGreeting = () => greetings[Math.floor(Math.random() * greetings.length)];
@@ -56,7 +85,7 @@ app.post('/', async (c) => {
   if (!verifyPassword(user, password)) {
     return c.html(renderSignIn({ email, error: 'Invalid email or password.' }), 401);
   }
-  setCookie(c, SESSION_COOKIE, user.email, {
+  setCookie(c, SESSION_COOKIE, createSession(user.email), {
     path: '/',
     httpOnly: true,
     secure: !isDevelopment,
