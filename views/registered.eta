@@ -1,11 +1,11 @@
-<% layout('./layout', { title: 'Account created', refresh: '3;url=/' }) %>
+<% layout('./layout', { title: 'Registration received', refresh: '3;url=/' }) %>
 <main class="container">
   <article class="card">
     <header>
-      <h1>Account created</h1>
+      <h1>Registration received</h1>
     </header>
     <div role="alert" data-variant="success">
-      <strong>Success!</strong> Your account for <%= it.email %> is ready.
+      <strong>Thanks!</strong> If <%= it.email %> was available, the account is ready to use.
     </div>
     <p>Redirecting you to the sign-in page. <a href="/">Continue now</a>.</p>
   </article>

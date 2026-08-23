@@ -298,10 +298,11 @@ app.post('/register', async (c) => {
     );
   }
   if (findUser(email)) {
-    return c.html(renderRegister(c, { email, error: 'That email address is already registered.' }), 409);
+    await hashPassword(password, randomBytes(16).toString('hex'));
+  } else {
+    await createUser(email, password);
   }
-  const user = await createUser(email, password);
-  return c.html(eta.render('registered', { email: user.email }), 201);
+  return c.html(eta.render('registered', { email: email.toLowerCase() }));
 });
 
 app.get('/profile', (c) => {
