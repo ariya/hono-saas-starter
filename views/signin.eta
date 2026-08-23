@@ -1,0 +1,20 @@
+<% layout('./layout', { title: 'Sign in' }) %>
+<main class="container">
+  <article class="card">
+    <header>
+      <h1><%= it.heading %></h1>
+      <p>Sign in to continue.</p>
+    </header>
+    <form method="post" action="/">
+      <label data-field>
+        Email
+        <input type="email" name="email" autocomplete="email" required />
+      </label>
+      <label data-field>
+        Password
+        <input type="password" name="password" autocomplete="current-password" required />
+      </label>
+      <button type="submit">Sign in</button>
+    </form>
+  </article>
+</main>
