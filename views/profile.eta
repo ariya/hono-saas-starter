@@ -1,9 +1,15 @@
 <% layout('./layout', { title: 'Profile' }) %>
+<nav>
+  <ul>
+    <li><strong><%= it.email %></strong></li>
+  </ul>
+</nav>
 <main class="container">
   <article class="card">
     <header>
-      <h1>Profile</h1>
+      <h1>Your profile</h1>
+      <p>Account details and settings will appear here.</p>
     </header>
-    <p>Signed in as <strong><%= it.email %></strong>.</p>
+    <p>You are signed in as <strong><%= it.email %></strong>.</p>
   </article>
 </main>
