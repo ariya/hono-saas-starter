@@ -29,6 +29,7 @@ const AUTH_WINDOW = 15 * 60 * 1000;
 const AUTH_MAX_PER_ACCOUNT = 5;
 const AUTH_MAX_PER_ADDRESS = 20;
 const AUTH_TRACKED_KEYS = 20000;
+const REVOKED_TRACKED_SESSIONS = 100000;
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const trustProxy = process.env.TRUST_PROXY === 'true';
@@ -123,8 +124,11 @@ const cookieOptions = (maxAge) => ({
 
 const sign = (value) => createHmac('sha256', hmacSecret).update(value).digest('base64url');
 
+const revoked = new Map();
+
 const createSession = (email) => {
-  const payload = `${Buffer.from(email).toString('base64url')}.${Date.now() + SESSION_MAX_AGE * 1000}`;
+  const identifier = randomBytes(16).toString('base64url');
+  const payload = [Buffer.from(email).toString('base64url'), Date.now() + SESSION_MAX_AGE * 1000, identifier].join('.');
   return `${payload}.${sign(payload)}`;
 };
 
@@ -133,17 +137,34 @@ const readSession = (token) => {
     return null;
   }
   const parts = token.split('.');
-  if (parts.length !== 3) {
+  if (parts.length !== 4) {
     return null;
   }
-  if (!equals(sign(`${parts[0]}.${parts[1]}`), parts[2])) {
+  if (!equals(sign(`${parts[0]}.${parts[1]}.${parts[2]}`), parts[3])) {
     return null;
   }
   const expiresAt = Number(parts[1]);
-  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) {
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now() || revoked.has(parts[2])) {
     return null;
   }
   return findUser(Buffer.from(parts[0], 'base64url').toString()) || null;
+};
+
+const revokeSession = (token) => {
+  const user = readSession(token);
+  if (!user) {
+    return;
+  }
+  const now = Date.now();
+  for (const [identifier, expiresAt] of revoked) {
+    if (expiresAt < now) {
+      revoked.delete(identifier);
+    }
+  }
+  const parts = token.split('.');
+  if (revoked.size < REVOKED_TRACKED_SESSIONS) {
+    revoked.set(parts[2], Number(parts[1]));
+  }
 };
 
 const equals = (a, b) => {
@@ -296,6 +317,7 @@ app.post('/signout', async (c) => {
   if (!verifyCsrfToken(c, body.csrf)) {
     return c.redirect('/profile', 303);
   }
+  revokeSession(getCookie(c, SESSION_COOKIE));
   deleteCookie(c, SESSION_COOKIE, cookieOptions(0));
   deleteCookie(c, CSRF_COOKIE, cookieOptions(0));
   return c.redirect('/', 303);
