@@ -11,6 +11,8 @@ const { Eta } = require('eta');
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 
+const CDN_ORIGIN = 'https://unpkg.com';
+
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
 const MAX_BODY_SIZE = 16 * 1024;
@@ -161,7 +163,19 @@ const greetings = ['Welcome', 'Welcome back', 'Good to see you', 'Hello again', 
 
 const randomGreeting = () => greetings[Math.floor(Math.random() * greetings.length)];
 
-app.use(secureHeaders());
+app.use(
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'none'"],
+      styleSrc: [CDN_ORIGIN],
+      scriptSrc: [CDN_ORIGIN],
+      imgSrc: ["'self'", 'data:'],
+      formAction: ["'self'"],
+      baseUri: ["'none'"],
+      frameAncestors: ["'none'"]
+    }
+  })
+);
 app.post('*', bodyLimit({ maxSize: MAX_BODY_SIZE }));
 
 const renderSignIn = (c, data) =>
