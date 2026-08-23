@@ -7,10 +7,20 @@
     <% if (it.refresh) { %>
     <meta http-equiv="refresh" content="<%= it.refresh %>" />
     <% } %>
-    <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@knadh/oat@0.7.2/oat.min.css"
+      integrity="sha384-JgFR/WT/tNMyAymGWeBuTU40xLejiR+zesrbgrnn0BGwfiojII7kU3jkZ9obHFha"
+      crossorigin="anonymous"
+    />
   </head>
   <body>
     <%~ it.body %>
-    <script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
+    <script
+      src="https://unpkg.com/@knadh/oat@0.7.2/oat.min.js"
+      integrity="sha384-eJVbbdVUAZ/FEhLkv5jBwfngbELmd929nOOAH6CbbJpNb6MZga0aYEEd+VgaJV+O"
+      crossorigin="anonymous"
+      defer
+    ></script>
   </body>
 </html>
