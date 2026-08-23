@@ -168,7 +168,11 @@ app.post('/register', async (c) => {
       400
     );
   }
-  return c.redirect('/', 303);
+  if (findUser(email)) {
+    return c.html(renderRegister(c, { email, error: 'That email address is already registered.' }), 409);
+  }
+  const user = createUser(email, password);
+  return c.html(eta.render('registered', { email: user.email }), 201);
 });
 
 app.get('/profile', (c) => {

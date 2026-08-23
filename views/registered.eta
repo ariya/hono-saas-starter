@@ -1,0 +1,12 @@
+<% layout('./layout', { title: 'Account created', refresh: '3;url=/' }) %>
+<main class="container">
+  <article class="card">
+    <header>
+      <h1>Account created</h1>
+    </header>
+    <div role="alert" data-variant="success">
+      <strong>Success!</strong> Your account for <%= it.email %> is ready.
+    </div>
+    <p>Redirecting you to the sign-in page. <a href="/">Continue now</a>.</p>
+  </article>
+</main>
