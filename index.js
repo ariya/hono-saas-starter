@@ -16,6 +16,9 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 
 const CDN_ORIGIN = 'https://unpkg.com';
 
+const SCRYPT_KEY_LENGTH = 64;
+const SCRYPT_PARAMS = { N: 65536, r: 8, p: 2, maxmem: 128 * 1024 * 1024 };
+
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
 const MAX_BODY_SIZE = 16 * 1024;
@@ -42,7 +45,8 @@ if (hmacSecret.length < MIN_SECRET_LENGTH) {
 
 const users = new Map();
 
-const hashPassword = async (password, salt) => (await scryptAsync(password, salt, 64)).toString('hex');
+const hashPassword = async (password, salt) =>
+  (await scryptAsync(password, salt, SCRYPT_KEY_LENGTH, SCRYPT_PARAMS)).toString('hex');
 
 const createUser = async (email, password) => {
   const normalized = String(email).trim().toLowerCase();
