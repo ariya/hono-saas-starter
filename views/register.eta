@@ -16,7 +16,7 @@
       </label>
       <label data-field>
         Password
-        <input type="password" name="password" autocomplete="new-password" minlength="8" required />
+        <input type="password" name="password" autocomplete="new-password" minlength="8" maxlength="128" required />
       </label>
       <button type="submit">Register</button>
     </form>

@@ -3,6 +3,7 @@ const { createHmac, randomBytes, scryptSync, timingSafeEqual } = require('node:c
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { getConnInfo } = require('@hono/node-server/conninfo');
+const { bodyLimit } = require('hono/body-limit');
 const { secureHeaders } = require('hono/secure-headers');
 const { deleteCookie, getCookie, setCookie } = require('hono/cookie');
 const { Eta } = require('eta');
@@ -11,6 +12,8 @@ const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 
 const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 128;
+const MAX_BODY_SIZE = 16 * 1024;
 
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 7 * 60 * 60;
@@ -159,6 +162,7 @@ const greetings = ['Welcome', 'Welcome back', 'Good to see you', 'Hello again', 
 const randomGreeting = () => greetings[Math.floor(Math.random() * greetings.length)];
 
 app.use(secureHeaders());
+app.post('*', bodyLimit({ maxSize: MAX_BODY_SIZE }));
 
 const renderSignIn = (c, data) =>
   eta.render('signin', {
@@ -193,7 +197,7 @@ app.post('/', async (c) => {
     return c.html(renderSignIn(c, { email, error: 'Your session expired. Please try again.' }), 403);
   }
   const user = findUser(email);
-  if (!verifyPassword(user, password)) {
+  if (password.length > MAX_PASSWORD_LENGTH || !verifyPassword(user, password)) {
     recordAttempt(limits);
     return c.html(renderSignIn(c, { email, error: 'Invalid email or password.' }), 401);
   }
@@ -228,9 +232,12 @@ app.post('/register', async (c) => {
   if (!email.includes('@')) {
     return c.html(renderRegister(c, { email, error: 'Enter a valid email address.' }), 400);
   }
-  if (password.length < MIN_PASSWORD_LENGTH) {
+  if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
     return c.html(
-      renderRegister(c, { email, error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` }),
+      renderRegister(c, {
+        email,
+        error: `Password must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters.`
+      }),
       400
     );
   }
