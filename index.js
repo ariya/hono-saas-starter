@@ -1,5 +1,6 @@
 const path = require('node:path');
-const { createHmac, randomBytes, scryptSync, timingSafeEqual } = require('node:crypto');
+const { promisify } = require('node:util');
+const { createHmac, randomBytes, scrypt, timingSafeEqual } = require('node:crypto');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { getConnInfo } = require('@hono/node-server/conninfo');
@@ -7,6 +8,8 @@ const { bodyLimit } = require('hono/body-limit');
 const { secureHeaders } = require('hono/secure-headers');
 const { deleteCookie, getCookie, setCookie } = require('hono/cookie');
 const { Eta } = require('eta');
+
+const scryptAsync = promisify(scrypt);
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
@@ -39,28 +42,30 @@ if (hmacSecret.length < MIN_SECRET_LENGTH) {
 
 const users = new Map();
 
-const hashPassword = (password, salt) => scryptSync(password, salt, 64).toString('hex');
+const hashPassword = async (password, salt) => (await scryptAsync(password, salt, 64)).toString('hex');
 
-const createUser = (email, password) => {
+const createUser = async (email, password) => {
   const normalized = String(email).trim().toLowerCase();
   const salt = randomBytes(16).toString('hex');
-  const user = { email: normalized, salt, hash: hashPassword(password, salt) };
+  const user = { email: normalized, salt, hash: await hashPassword(password, salt) };
   users.set(normalized, user);
   return user;
 };
 
 const findUser = (email) => users.get(String(email).trim().toLowerCase());
 
-const verifyPassword = (user, password) => {
+const verifyPassword = async (user, password) => {
   const salt = user ? user.salt : 'unknown';
-  const expected = Buffer.from(user ? user.hash : hashPassword('', salt), 'hex');
-  const actual = Buffer.from(hashPassword(password, salt), 'hex');
+  const expected = Buffer.from(user ? user.hash : await hashPassword('', salt), 'hex');
+  const actual = Buffer.from(await hashPassword(password, salt), 'hex');
   return Boolean(user) && timingSafeEqual(expected, actual);
 };
 
-if (process.env.DEMO_EMAIL && process.env.DEMO_PASSWORD) {
-  createUser(process.env.DEMO_EMAIL, process.env.DEMO_PASSWORD);
-}
+const seedDemoAccount = async () => {
+  if (process.env.DEMO_EMAIL && process.env.DEMO_PASSWORD) {
+    await createUser(process.env.DEMO_EMAIL, process.env.DEMO_PASSWORD);
+  }
+};
 
 const attempts = new Map();
 
@@ -216,7 +221,7 @@ app.post('/', async (c) => {
     return c.html(renderSignIn(c, { email, error: 'Your session expired. Please try again.' }), 403);
   }
   const user = findUser(email);
-  if (password.length > MAX_PASSWORD_LENGTH || !verifyPassword(user, password)) {
+  if (password.length > MAX_PASSWORD_LENGTH || !(await verifyPassword(user, password))) {
     recordAttempt(limits);
     return c.html(renderSignIn(c, { email, error: 'Invalid email or password.' }), 401);
   }
@@ -263,7 +268,7 @@ app.post('/register', async (c) => {
   if (findUser(email)) {
     return c.html(renderRegister(c, { email, error: 'That email address is already registered.' }), 409);
   }
-  const user = createUser(email, password);
+  const user = await createUser(email, password);
   return c.html(eta.render('registered', { email: user.email }), 201);
 });
 
@@ -288,5 +293,11 @@ app.post('/signout', async (c) => {
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
-serve({ fetch: app.fetch, port });
-console.log('Listening on port', port);
+
+const main = async () => {
+  await seedDemoAccount();
+  serve({ fetch: app.fetch, port });
+  console.log('Listening on port', port);
+};
+
+main();
