@@ -140,6 +140,16 @@ app.post('/', async (c) => {
   return c.redirect('/profile', 303);
 });
 
+const renderRegister = (c, data) =>
+  eta.render('register', { email: '', error: '', csrfToken: issueCsrfToken(c), ...data });
+
+app.get('/register', (c) => {
+  if (readSession(getCookie(c, SESSION_COOKIE))) {
+    return c.redirect('/profile', 303);
+  }
+  return c.html(renderRegister(c, {}));
+});
+
 app.get('/profile', (c) => {
   const user = readSession(getCookie(c, SESSION_COOKIE));
   if (!user) {

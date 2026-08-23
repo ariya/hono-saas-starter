@@ -1,0 +1,27 @@
+<% layout('./layout', { title: 'Register' }) %>
+<main class="container">
+  <article class="card">
+    <header>
+      <h1>Create your account</h1>
+      <p>Register with your email address.</p>
+    </header>
+    <% if (it.error) { %>
+    <div role="alert" data-variant="error"><strong>Error</strong> <%= it.error %></div>
+    <% } %>
+    <form method="post" action="/register">
+      <input type="hidden" name="csrf" value="<%= it.csrfToken %>" />
+      <label data-field>
+        Email
+        <input type="email" name="email" value="<%= it.email %>" autocomplete="email" required />
+      </label>
+      <label data-field>
+        Password
+        <input type="password" name="password" autocomplete="new-password" minlength="8" required />
+      </label>
+      <button type="submit">Register</button>
+    </form>
+    <footer>
+      <p><a href="/">Back to sign in</a></p>
+    </footer>
+  </article>
+</main>
