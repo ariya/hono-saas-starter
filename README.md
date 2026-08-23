@@ -27,3 +27,7 @@ ephemeral `HMAC_SECRET` is generated when none is supplied.
 | `DEMO_EMAIL`, `DEMO_PASSWORD` | Optional seed account for the in-memory user store              |
 
 Accounts live in memory only and are lost when the process restarts.
+
+New accounts start unverified and cannot sign in until their verification link
+is followed. There is no mail transport yet, so the link is written to the
+server log; wiring it to a real sender is the remaining piece of that flow.

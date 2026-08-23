@@ -5,6 +5,9 @@
       <h1><%= it.heading %></h1>
       <p>Sign in to continue.</p>
     </header>
+    <% if (it.notice) { %>
+    <div role="alert" data-variant="success"><strong>Verified</strong> <%= it.notice %></div>
+    <% } %>
     <% if (it.error) { %>
     <div role="alert" data-variant="error"><strong>Error</strong> <%= it.error %></div>
     <% } %>

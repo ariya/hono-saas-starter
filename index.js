@@ -40,6 +40,7 @@ const SESSION_COOKIE = `${COOKIE_PREFIX}session`;
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const CSRF_COOKIE = `${COOKIE_PREFIX}csrf`;
 const CSRF_MAX_AGE = 2 * 60 * 60;
+const VERIFY_MAX_AGE = 24 * 60 * 60 * 1000;
 const hmacSecret = process.env.HMAC_SECRET || (isDevelopment ? randomBytes(32).toString('hex') : '');
 
 if (hmacSecret.length < MIN_SECRET_LENGTH) {
@@ -52,10 +53,10 @@ const users = new Map();
 const hashPassword = async (password, salt) =>
   (await scryptAsync(password, salt, SCRYPT_KEY_LENGTH, SCRYPT_PARAMS)).toString('hex');
 
-const createUser = async (email, password) => {
+const createUser = async (email, password, verified = false) => {
   const normalized = String(email).trim().toLowerCase();
   const salt = randomBytes(16).toString('hex');
-  const user = { email: normalized, salt, hash: await hashPassword(password, salt) };
+  const user = { email: normalized, salt, hash: await hashPassword(password, salt), verified };
   users.set(normalized, user);
   return user;
 };
@@ -83,7 +84,7 @@ const seedDemoAccount = async () => {
     console.error(`Ignoring the demo account: DEMO_PASSWORD must be at least ${MIN_PASSWORD_LENGTH} characters`);
     return;
   }
-  await createUser(email, password);
+  await createUser(email, password, true);
   console.log('Seeded the demo account', email);
 };
 
@@ -136,6 +137,29 @@ const cookieOptions = (maxAge) => ({
 });
 
 const sign = (value) => createHmac('sha256', hmacSecret).update(value).digest('base64url');
+
+const createVerificationToken = (email) => {
+  const payload = `${Buffer.from(email).toString('base64url')}.${Date.now() + VERIFY_MAX_AGE}`;
+  return `${payload}.${sign(`verify:${payload}`)}`;
+};
+
+const readVerificationToken = (token) => {
+  if (typeof token !== 'string') {
+    return null;
+  }
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    return null;
+  }
+  if (!equals(sign(`verify:${parts[0]}.${parts[1]}`), parts[2])) {
+    return null;
+  }
+  const expiresAt = Number(parts[1]);
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) {
+    return null;
+  }
+  return findUser(Buffer.from(parts[0], 'base64url').toString()) || null;
+};
 
 const revoked = new Map();
 
@@ -238,6 +262,7 @@ const renderSignIn = (c, data) =>
     heading: randomGreeting(),
     email: '',
     error: '',
+    notice: '',
     csrfToken: issueCsrfToken(c),
     ...data
   });
@@ -269,6 +294,9 @@ app.post('/', async (c) => {
   if (password.length > MAX_PASSWORD_LENGTH || !(await verifyPassword(user, password))) {
     recordAttempt(limits);
     return c.html(renderSignIn(c, { email, error: 'Invalid email or password.' }), 401);
+  }
+  if (!user.verified) {
+    return c.html(renderSignIn(c, { email, error: 'Verify your email address before signing in.' }), 403);
   }
   clearAttempts(limits);
   setCookie(c, SESSION_COOKIE, createSession(user.email), cookieOptions(SESSION_MAX_AGE));
@@ -316,9 +344,21 @@ app.post('/register', async (c) => {
   if (findUser(email)) {
     await hashPassword(password, randomBytes(16).toString('hex'));
   } else {
-    await createUser(email, password);
+    const user = await createUser(email, password);
+    const link = new URL('/verify', c.req.url);
+    link.searchParams.set('token', createVerificationToken(user.email));
+    console.log('Verification link for', user.email, link.toString());
   }
   return c.html(eta.render('registered', { email: email.toLowerCase() }));
+});
+
+app.get('/verify', (c) => {
+  const user = readVerificationToken(c.req.query('token'));
+  if (!user) {
+    return c.html(renderSignIn(c, { error: 'That verification link is invalid or has expired.' }), 400);
+  }
+  user.verified = true;
+  return c.html(renderSignIn(c, { notice: 'Your email address is verified. You can sign in now.' }));
 });
 
 app.get('/profile', (c) => {
