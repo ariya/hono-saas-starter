@@ -11,6 +11,7 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 7 * 60 * 60;
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 const users = new Map();
 
@@ -58,7 +59,7 @@ app.post('/', async (c) => {
   setCookie(c, SESSION_COOKIE, user.email, {
     path: '/',
     httpOnly: true,
-    secure: true,
+    secure: !isDevelopment,
     sameSite: 'Lax',
     maxAge: SESSION_MAX_AGE
   });
