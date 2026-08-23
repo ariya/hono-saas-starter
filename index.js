@@ -3,7 +3,7 @@ const { createHmac, randomBytes, scryptSync, timingSafeEqual } = require('node:c
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
-const { setCookie } = require('hono/cookie');
+const { getCookie, setCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const app = new Hono();
@@ -11,6 +11,8 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 7 * 60 * 60;
+const CSRF_COOKIE = 'csrf';
+const CSRF_MAX_AGE = 2 * 60 * 60;
 const isDevelopment = process.env.NODE_ENV === 'development';
 const hmacSecret = process.env.HMAC_SECRET || (isDevelopment ? randomBytes(32).toString('hex') : '');
 
@@ -44,6 +46,14 @@ if (process.env.DEMO_EMAIL && process.env.DEMO_PASSWORD) {
   createUser(process.env.DEMO_EMAIL, process.env.DEMO_PASSWORD);
 }
 
+const cookieOptions = (maxAge) => ({
+  path: '/',
+  httpOnly: true,
+  secure: !isDevelopment,
+  sameSite: 'Lax',
+  maxAge
+});
+
 const sign = (value) => createHmac('sha256', hmacSecret).update(value).digest('base64url');
 
 const createSession = (email) => {
@@ -59,10 +69,7 @@ const readSession = (token) => {
   if (parts.length !== 3) {
     return null;
   }
-  const payload = `${parts[0]}.${parts[1]}`;
-  const expected = Buffer.from(sign(payload));
-  const actual = Buffer.from(parts[2]);
-  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+  if (!equals(sign(`${parts[0]}.${parts[1]}`), parts[2])) {
     return null;
   }
   const expiresAt = Number(parts[1]);
@@ -72,31 +79,59 @@ const readSession = (token) => {
   return findUser(Buffer.from(parts[0], 'base64url').toString()) || null;
 };
 
+const equals = (a, b) => {
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  return left.length === right.length && timingSafeEqual(left, right);
+};
+
+const issueCsrfToken = (c) => {
+  const nonce = randomBytes(16).toString('base64url');
+  setCookie(c, CSRF_COOKIE, nonce, cookieOptions(CSRF_MAX_AGE));
+  return `${nonce}.${sign(`csrf:${nonce}`)}`;
+};
+
+const verifyCsrfToken = (c, token) => {
+  const nonce = getCookie(c, CSRF_COOKIE);
+  if (!nonce || typeof token !== 'string') {
+    return false;
+  }
+  const [provided, signature] = token.split('.');
+  if (!provided || !signature) {
+    return false;
+  }
+  return equals(sign(`csrf:${provided}`), signature) && equals(provided, nonce);
+};
+
 const greetings = ['Welcome', 'Welcome back', 'Good to see you', 'Hello again', 'Nice to have you back'];
 
 const randomGreeting = () => greetings[Math.floor(Math.random() * greetings.length)];
 
 app.use(secureHeaders());
 
-const renderSignIn = (data) => eta.render('signin', { heading: randomGreeting(), email: '', error: '', ...data });
+const renderSignIn = (c, data) =>
+  eta.render('signin', {
+    heading: randomGreeting(),
+    email: '',
+    error: '',
+    csrfToken: issueCsrfToken(c),
+    ...data
+  });
 
-app.get('/', (c) => c.html(renderSignIn({})));
+app.get('/', (c) => c.html(renderSignIn(c, {})));
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
   const email = typeof body.email === 'string' ? body.email : '';
   const password = typeof body.password === 'string' ? body.password : '';
+  if (!verifyCsrfToken(c, body.csrf)) {
+    return c.html(renderSignIn(c, { email, error: 'Your session expired. Please try again.' }), 403);
+  }
   const user = findUser(email);
   if (!verifyPassword(user, password)) {
-    return c.html(renderSignIn({ email, error: 'Invalid email or password.' }), 401);
+    return c.html(renderSignIn(c, { email, error: 'Invalid email or password.' }), 401);
   }
-  setCookie(c, SESSION_COOKIE, createSession(user.email), {
-    path: '/',
-    httpOnly: true,
-    secure: !isDevelopment,
-    sameSite: 'Lax',
-    maxAge: SESSION_MAX_AGE
-  });
+  setCookie(c, SESSION_COOKIE, createSession(user.email), cookieOptions(SESSION_MAX_AGE));
   return c.redirect('/profile', 303);
 });
 
