@@ -20,5 +20,8 @@
       </label>
       <button type="submit">Sign in</button>
     </form>
+    <footer>
+      <p><a href="/register">Register for account</a></p>
+    </footer>
   </article>
 </main>
