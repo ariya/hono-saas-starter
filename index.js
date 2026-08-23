@@ -16,6 +16,8 @@ const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const CSRF_COOKIE = 'csrf';
 const CSRF_MAX_AGE = 2 * 60 * 60;
+const MIN_SECRET_LENGTH = 32;
+
 const AUTH_WINDOW = 15 * 60 * 1000;
 const AUTH_MAX_PER_ACCOUNT = 5;
 const AUTH_MAX_PER_ADDRESS = 20;
@@ -25,8 +27,8 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 const trustProxy = process.env.TRUST_PROXY === 'true';
 const hmacSecret = process.env.HMAC_SECRET || (isDevelopment ? randomBytes(32).toString('hex') : '');
 
-if (!hmacSecret) {
-  console.error('HMAC_SECRET is required');
+if (hmacSecret.length < MIN_SECRET_LENGTH) {
+  console.error(`HMAC_SECRET is required and must be at least ${MIN_SECRET_LENGTH} characters`);
   process.exit(1);
 }
 
