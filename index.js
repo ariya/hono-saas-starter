@@ -7,9 +7,13 @@ const { Eta } = require('eta');
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 
+const greetings = ['Welcome', 'Welcome back', 'Good to see you', 'Hello again', 'Nice to have you back'];
+
+const randomGreeting = () => greetings[Math.floor(Math.random() * greetings.length)];
+
 app.use(secureHeaders());
 
-app.get('/', (c) => c.html(eta.render('signin', { heading: 'Welcome' })));
+app.get('/', (c) => c.html(eta.render('signin', { heading: randomGreeting() })));
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
