@@ -3,10 +3,13 @@ const { randomBytes, scryptSync, timingSafeEqual } = require('node:crypto');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
+const { setCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
+
+const SESSION_COOKIE = 'session';
 
 const users = new Map();
 
@@ -51,7 +54,8 @@ app.post('/', async (c) => {
   if (!verifyPassword(user, password)) {
     return c.html(renderSignIn({ email, error: 'Invalid email or password.' }), 401);
   }
-  return c.text(`Signed in as ${user.email}`);
+  setCookie(c, SESSION_COOKIE, user.email, { path: '/', httpOnly: true, sameSite: 'Lax' });
+  return c.redirect('/profile', 303);
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
