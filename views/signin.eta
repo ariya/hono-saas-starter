@@ -5,10 +5,13 @@
       <h1><%= it.heading %></h1>
       <p>Sign in to continue.</p>
     </header>
+    <% if (it.error) { %>
+    <div role="alert" data-variant="error"><strong>Error</strong> <%= it.error %></div>
+    <% } %>
     <form method="post" action="/">
       <label data-field>
         Email
-        <input type="email" name="email" autocomplete="email" required />
+        <input type="email" name="email" value="<%= it.email %>" autocomplete="email" required />
       </label>
       <label data-field>
         Password

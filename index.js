@@ -39,7 +39,9 @@ const randomGreeting = () => greetings[Math.floor(Math.random() * greetings.leng
 
 app.use(secureHeaders());
 
-app.get('/', (c) => c.html(eta.render('signin', { heading: randomGreeting() })));
+const renderSignIn = (data) => eta.render('signin', { heading: randomGreeting(), email: '', error: '', ...data });
+
+app.get('/', (c) => c.html(renderSignIn({})));
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
@@ -47,7 +49,7 @@ app.post('/', async (c) => {
   const password = typeof body.password === 'string' ? body.password : '';
   const user = findUser(email);
   if (!verifyPassword(user, password)) {
-    return c.text('Invalid email or password', 401);
+    return c.html(renderSignIn({ email, error: 'Invalid email or password.' }), 401);
   }
   return c.text(`Signed in as ${user.email}`);
 });
