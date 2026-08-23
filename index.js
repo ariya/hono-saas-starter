@@ -30,6 +30,7 @@ const AUTH_MAX_PER_ACCOUNT = 5;
 const AUTH_MAX_PER_ADDRESS = 20;
 const AUTH_TRACKED_KEYS = 20000;
 const REVOKED_TRACKED_SESSIONS = 100000;
+const MAX_ACCOUNTS = Number(process.env.MAX_ACCOUNTS) || 10000;
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const trustProxy = process.env.TRUST_PROXY === 'true';
@@ -308,6 +309,9 @@ app.post('/register', async (c) => {
       }),
       400
     );
+  }
+  if (users.size >= MAX_ACCOUNTS) {
+    return c.html(renderRegister(c, { email, error: 'Registration is temporarily unavailable.' }), 503);
   }
   if (findUser(email)) {
     await hashPassword(password, randomBytes(16).toString('hex'));
