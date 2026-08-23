@@ -10,6 +10,7 @@ const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 
 const SESSION_COOKIE = 'session';
+const SESSION_MAX_AGE = 7 * 60 * 60;
 
 const users = new Map();
 
@@ -54,7 +55,13 @@ app.post('/', async (c) => {
   if (!verifyPassword(user, password)) {
     return c.html(renderSignIn({ email, error: 'Invalid email or password.' }), 401);
   }
-  setCookie(c, SESSION_COOKIE, user.email, { path: '/', httpOnly: true, sameSite: 'Lax' });
+  setCookie(c, SESSION_COOKIE, user.email, {
+    path: '/',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Lax',
+    maxAge: SESSION_MAX_AGE
+  });
   return c.redirect('/profile', 303);
 });
 
