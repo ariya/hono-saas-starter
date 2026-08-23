@@ -12,7 +12,12 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const isDevelopment = process.env.NODE_ENV === 'development';
-const hmacSecret = randomBytes(32);
+const hmacSecret = process.env.HMAC_SECRET || (isDevelopment ? randomBytes(32).toString('hex') : '');
+
+if (!hmacSecret) {
+  console.error('HMAC_SECRET is required');
+  process.exit(1);
+}
 
 const users = new Map();
 
