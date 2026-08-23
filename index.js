@@ -118,7 +118,12 @@ const renderSignIn = (c, data) =>
     ...data
   });
 
-app.get('/', (c) => c.html(renderSignIn(c, {})));
+app.get('/', (c) => {
+  if (readSession(getCookie(c, SESSION_COOKIE))) {
+    return c.redirect('/profile', 303);
+  }
+  return c.html(renderSignIn(c, {}));
+});
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
