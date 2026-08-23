@@ -9,6 +9,8 @@ const { Eta } = require('eta');
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 
+const MIN_PASSWORD_LENGTH = 8;
+
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const CSRF_COOKIE = 'csrf';
@@ -148,6 +150,25 @@ app.get('/register', (c) => {
     return c.redirect('/profile', 303);
   }
   return c.html(renderRegister(c, {}));
+});
+
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  const email = typeof body.email === 'string' ? body.email.trim() : '';
+  const password = typeof body.password === 'string' ? body.password : '';
+  if (!verifyCsrfToken(c, body.csrf)) {
+    return c.html(renderRegister(c, { email, error: 'Your session expired. Please try again.' }), 403);
+  }
+  if (!email.includes('@')) {
+    return c.html(renderRegister(c, { email, error: 'Enter a valid email address.' }), 400);
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return c.html(
+      renderRegister(c, { email, error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` }),
+      400
+    );
+  }
+  return c.redirect('/', 303);
 });
 
 app.get('/profile', (c) => {
