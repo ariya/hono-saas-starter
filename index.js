@@ -23,10 +23,6 @@ const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
 const MAX_BODY_SIZE = 16 * 1024;
 
-const SESSION_COOKIE = 'session';
-const SESSION_MAX_AGE = 7 * 60 * 60;
-const CSRF_COOKIE = 'csrf';
-const CSRF_MAX_AGE = 2 * 60 * 60;
 const MIN_SECRET_LENGTH = 32;
 
 const AUTH_WINDOW = 15 * 60 * 1000;
@@ -36,6 +32,12 @@ const AUTH_TRACKED_KEYS = 20000;
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const trustProxy = process.env.TRUST_PROXY === 'true';
+
+const COOKIE_PREFIX = isDevelopment ? '' : '__Host-';
+const SESSION_COOKIE = `${COOKIE_PREFIX}session`;
+const SESSION_MAX_AGE = 7 * 60 * 60;
+const CSRF_COOKIE = `${COOKIE_PREFIX}csrf`;
+const CSRF_MAX_AGE = 2 * 60 * 60;
 const hmacSecret = process.env.HMAC_SECRET || (isDevelopment ? randomBytes(32).toString('hex') : '');
 
 if (hmacSecret.length < MIN_SECRET_LENGTH) {
@@ -289,8 +291,8 @@ app.post('/signout', async (c) => {
   if (!verifyCsrfToken(c, body.csrf)) {
     return c.redirect('/profile', 303);
   }
-  deleteCookie(c, SESSION_COOKIE, { path: '/' });
-  deleteCookie(c, CSRF_COOKIE, { path: '/' });
+  deleteCookie(c, SESSION_COOKIE, cookieOptions(0));
+  deleteCookie(c, CSRF_COOKIE, cookieOptions(0));
   return c.redirect('/', 303);
 });
 
