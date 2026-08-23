@@ -1,8 +1,12 @@
 <% layout('./layout', { title: 'Profile' }) %>
-<nav>
-  <ul>
-    <li><strong><%= it.email %></strong></li>
-  </ul>
+<nav data-topnav>
+  <div class="hstack justify-between w-100">
+    <strong><%= it.email %></strong>
+    <form method="post" action="/signout">
+      <input type="hidden" name="csrf" value="<%= it.csrfToken %>" />
+      <button type="submit" class="outline small">Sign out</button>
+    </form>
+  </div>
 </nav>
 <main class="container">
   <article class="card">
