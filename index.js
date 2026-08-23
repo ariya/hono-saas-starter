@@ -152,10 +152,15 @@ const equals = (a, b) => {
   return left.length === right.length && timingSafeEqual(left, right);
 };
 
+const csrfBinding = (c, nonce) => {
+  const session = getCookie(c, SESSION_COOKIE);
+  return sign(`csrf:${nonce}:${session ? sign(session) : 'anonymous'}`);
+};
+
 const issueCsrfToken = (c) => {
   const nonce = randomBytes(16).toString('base64url');
   setCookie(c, CSRF_COOKIE, nonce, cookieOptions(CSRF_MAX_AGE));
-  return `${nonce}.${sign(`csrf:${nonce}`)}`;
+  return `${nonce}.${csrfBinding(c, nonce)}`;
 };
 
 const verifyCsrfToken = (c, token) => {
@@ -167,7 +172,7 @@ const verifyCsrfToken = (c, token) => {
   if (!provided || !signature) {
     return false;
   }
-  return equals(sign(`csrf:${provided}`), signature) && equals(provided, nonce);
+  return equals(csrfBinding(c, provided), signature) && equals(provided, nonce);
 };
 
 const greetings = ['Welcome', 'Welcome back', 'Good to see you', 'Hello again', 'Nice to have you back'];

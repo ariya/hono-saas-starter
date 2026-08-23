@@ -37,7 +37,7 @@
 - [x] Replace synchronous scrypt with the asynchronous variant so password hashing cannot block the event loop for other requests.
 - [x] Raise the scrypt cost parameters to current OWASP guidance instead of relying on the Node defaults.
 - [x] Prefix the session and CSRF cookies with `__Host-` in production, so a compromised sibling subdomain cannot overwrite them.
-- [ ] Bind the CSRF token to the active session, so an attacker cannot pair a self-issued token with a tossed cookie.
+- [x] Bind the CSRF token to the active session, so an attacker cannot pair a self-issued token with a tossed cookie.
 - [ ] Invalidate issued session tokens on sign out, so a captured cookie stops working before its 7-hour expiry.
 
 ### Medium
