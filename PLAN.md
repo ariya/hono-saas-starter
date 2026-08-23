@@ -46,7 +46,7 @@
 - [x] Restrict the `DEMO_EMAIL` and `DEMO_PASSWORD` seeding to development, and apply the password policy to the seeded account.
 - [x] Bound the number of accounts the in-memory store will hold, so open registration cannot exhaust memory.
 - [x] Require email verification before an account can be used to sign in.
-- [ ] Rotate the CSRF nonce after a successful sign-in to prevent pre-authentication token fixation.
+- [x] Rotate the CSRF nonce after a successful sign-in to prevent pre-authentication token fixation.
 - [ ] Log authentication successes, failures, and rate-limit rejections so attacks are detectable.
 
 ### Low

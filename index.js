@@ -299,6 +299,7 @@ app.post('/', async (c) => {
     return c.html(renderSignIn(c, { email, error: 'Verify your email address before signing in.' }), 403);
   }
   clearAttempts(limits);
+  deleteCookie(c, CSRF_COOKIE, cookieOptions(0));
   setCookie(c, SESSION_COOKIE, createSession(user.email), cookieOptions(SESSION_MAX_AGE));
   return c.redirect('/profile', 303);
 });
