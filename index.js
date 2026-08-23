@@ -1,5 +1,5 @@
 const path = require('node:path');
-const { randomBytes, scryptSync } = require('node:crypto');
+const { randomBytes, scryptSync, timingSafeEqual } = require('node:crypto');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
@@ -22,6 +22,13 @@ const createUser = (email, password) => {
 
 const findUser = (email) => users.get(String(email).trim().toLowerCase());
 
+const verifyPassword = (user, password) => {
+  const salt = user ? user.salt : 'unknown';
+  const expected = Buffer.from(user ? user.hash : hashPassword('', salt), 'hex');
+  const actual = Buffer.from(hashPassword(password, salt), 'hex');
+  return Boolean(user) && timingSafeEqual(expected, actual);
+};
+
 if (process.env.DEMO_EMAIL && process.env.DEMO_PASSWORD) {
   createUser(process.env.DEMO_EMAIL, process.env.DEMO_PASSWORD);
 }
@@ -33,6 +40,17 @@ const randomGreeting = () => greetings[Math.floor(Math.random() * greetings.leng
 app.use(secureHeaders());
 
 app.get('/', (c) => c.html(eta.render('signin', { heading: randomGreeting() })));
+
+app.post('/', async (c) => {
+  const body = await c.req.parseBody();
+  const email = typeof body.email === 'string' ? body.email : '';
+  const password = typeof body.password === 'string' ? body.password : '';
+  const user = findUser(email);
+  if (!verifyPassword(user, password)) {
+    return c.text('Invalid email or password', 401);
+  }
+  return c.text(`Signed in as ${user.email}`);
+});
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
