@@ -178,6 +178,11 @@ app.use(
 );
 app.post('*', bodyLimit({ maxSize: MAX_BODY_SIZE }));
 
+app.use(async (c, next) => {
+  await next();
+  c.header('Cache-Control', 'no-store');
+});
+
 const renderSignIn = (c, data) =>
   eta.render('signin', {
     heading: randomGreeting(),

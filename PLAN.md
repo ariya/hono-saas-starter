@@ -33,7 +33,7 @@
 ### High
 
 - [x] Send a Content-Security-Policy header that allowlists only the pinned CDN origin, to contain any future script injection.
-- [ ] Send `Cache-Control: no-store` on every dynamic HTML response, so CSRF tokens and profile data are never retained by browsers or shared proxies.
+- [x] Send `Cache-Control: no-store` on every dynamic HTML response, so CSRF tokens and profile data are never retained by browsers or shared proxies.
 - [ ] Replace synchronous scrypt with the asynchronous variant so password hashing cannot block the event loop for other requests.
 - [ ] Raise the scrypt cost parameters to current OWASP guidance instead of relying on the Node defaults.
 - [ ] Prefix the session and CSRF cookies with `__Host-` in production, so a compromised sibling subdomain cannot overwrite them.
