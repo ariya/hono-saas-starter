@@ -24,7 +24,8 @@ ephemeral `HMAC_SECRET` is generated when none is supplied.
 | `PORT`                        | Listening port, defaults to `3000`                              |
 | `NODE_ENV`                    | Set to `development` to relax cookie and secret requirements    |
 | `TRUST_PROXY`                 | Set to `true` to read the client address from `X-Forwarded-For` |
-| `DEMO_EMAIL`, `DEMO_PASSWORD` | Optional seed account for the in-memory user store              |
+| `MAX_ACCOUNTS`                | Maximum accounts held in memory, defaults to `10000`            |
+| `DEMO_EMAIL`, `DEMO_PASSWORD` | Optional pre-verified seed account, development only            |
 
 Accounts live in memory only and are lost when the process restarts.
 
