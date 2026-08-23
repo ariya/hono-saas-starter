@@ -3,7 +3,7 @@ const { createHmac, randomBytes, scryptSync, timingSafeEqual } = require('node:c
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
-const { getCookie, setCookie } = require('hono/cookie');
+const { deleteCookie, getCookie, setCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const app = new Hono();
@@ -181,6 +181,16 @@ app.get('/profile', (c) => {
     return c.redirect('/', 303);
   }
   return c.html(eta.render('profile', { email: user.email, csrfToken: issueCsrfToken(c) }));
+});
+
+app.post('/signout', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(c, body.csrf)) {
+    return c.redirect('/profile', 303);
+  }
+  deleteCookie(c, SESSION_COOKIE, { path: '/' });
+  deleteCookie(c, CSRF_COOKIE, { path: '/' });
+  return c.redirect('/', 303);
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
