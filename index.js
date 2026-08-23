@@ -2,6 +2,7 @@ const path = require('node:path');
 const { createHmac, randomBytes, scryptSync, timingSafeEqual } = require('node:crypto');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
+const { getConnInfo } = require('@hono/node-server/conninfo');
 const { secureHeaders } = require('hono/secure-headers');
 const { deleteCookie, getCookie, setCookie } = require('hono/cookie');
 const { Eta } = require('eta');
@@ -15,7 +16,13 @@ const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const CSRF_COOKIE = 'csrf';
 const CSRF_MAX_AGE = 2 * 60 * 60;
+const AUTH_WINDOW = 15 * 60 * 1000;
+const AUTH_MAX_PER_ACCOUNT = 5;
+const AUTH_MAX_PER_ADDRESS = 20;
+const AUTH_TRACKED_KEYS = 20000;
+
 const isDevelopment = process.env.NODE_ENV === 'development';
+const trustProxy = process.env.TRUST_PROXY === 'true';
 const hmacSecret = process.env.HMAC_SECRET || (isDevelopment ? randomBytes(32).toString('hex') : '');
 
 if (!hmacSecret) {
@@ -47,6 +54,46 @@ const verifyPassword = (user, password) => {
 if (process.env.DEMO_EMAIL && process.env.DEMO_PASSWORD) {
   createUser(process.env.DEMO_EMAIL, process.env.DEMO_PASSWORD);
 }
+
+const attempts = new Map();
+
+const clientAddress = (c) => {
+  if (trustProxy) {
+    const forwarded = c.req.header('x-forwarded-for');
+    if (forwarded) {
+      return forwarded.split(',')[0].trim();
+    }
+  }
+  return getConnInfo(c).remote.address || 'unknown';
+};
+
+const freshAttempts = (key, now) => (attempts.get(key) || []).filter((at) => at > now - AUTH_WINDOW);
+
+const tooManyAttempts = (limits) => {
+  const now = Date.now();
+  return limits.some(([key, max]) => freshAttempts(key, now).length >= max);
+};
+
+const recordAttempt = (limits) => {
+  const now = Date.now();
+  for (const [key, hits] of attempts) {
+    if (hits.every((at) => at <= now - AUTH_WINDOW)) {
+      attempts.delete(key);
+    }
+  }
+  for (const [key] of limits) {
+    if (!attempts.has(key) && attempts.size >= AUTH_TRACKED_KEYS) {
+      attempts.delete(attempts.keys().next().value);
+    }
+    attempts.set(key, [...freshAttempts(key, now), now]);
+  }
+};
+
+const clearAttempts = (limits) => {
+  for (const [key] of limits) {
+    attempts.delete(key);
+  }
+};
 
 const cookieOptions = (maxAge) => ({
   path: '/',
@@ -131,13 +178,24 @@ app.post('/', async (c) => {
   const body = await c.req.parseBody();
   const email = typeof body.email === 'string' ? body.email : '';
   const password = typeof body.password === 'string' ? body.password : '';
+  const limits = [
+    [`signin:${clientAddress(c)}`, AUTH_MAX_PER_ADDRESS],
+    [`account:${email.trim().toLowerCase()}`, AUTH_MAX_PER_ACCOUNT]
+  ];
+  if (tooManyAttempts(limits)) {
+    c.header('Retry-After', String(AUTH_WINDOW / 1000));
+    return c.html(renderSignIn(c, { email, error: 'Too many attempts. Please try again later.' }), 429);
+  }
   if (!verifyCsrfToken(c, body.csrf)) {
+    recordAttempt(limits);
     return c.html(renderSignIn(c, { email, error: 'Your session expired. Please try again.' }), 403);
   }
   const user = findUser(email);
   if (!verifyPassword(user, password)) {
+    recordAttempt(limits);
     return c.html(renderSignIn(c, { email, error: 'Invalid email or password.' }), 401);
   }
+  clearAttempts(limits);
   setCookie(c, SESSION_COOKIE, createSession(user.email), cookieOptions(SESSION_MAX_AGE));
   return c.redirect('/profile', 303);
 });
@@ -156,6 +214,12 @@ app.post('/register', async (c) => {
   const body = await c.req.parseBody();
   const email = typeof body.email === 'string' ? body.email.trim() : '';
   const password = typeof body.password === 'string' ? body.password : '';
+  const limits = [[`register:${clientAddress(c)}`, AUTH_MAX_PER_ADDRESS]];
+  if (tooManyAttempts(limits)) {
+    c.header('Retry-After', String(AUTH_WINDOW / 1000));
+    return c.html(renderRegister(c, { email, error: 'Too many attempts. Please try again later.' }), 429);
+  }
+  recordAttempt(limits);
   if (!verifyCsrfToken(c, body.csrf)) {
     return c.html(renderRegister(c, { email, error: 'Your session expired. Please try again.' }), 403);
   }

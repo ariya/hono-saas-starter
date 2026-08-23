@@ -26,7 +26,7 @@
 ### Critical
 
 - [x] Pin the Oat CDN assets to an exact version and add Subresource Integrity hashes, so a compromised CDN cannot inject script into the credential-entry pages.
-- [ ] Rate limit the sign-in and registration endpoints per client and per account, so unlimited password guessing and credential stuffing are not possible.
+- [x] Rate limit the sign-in and registration endpoints per client and per account, so unlimited password guessing and credential stuffing are not possible.
 - [ ] Reject weak `HMAC_SECRET` values (require at least 32 characters) instead of accepting any non-empty string that can be brute-forced to forge session cookies.
 - [ ] Cap the request body size and the accepted password length, so unauthenticated requests cannot exhaust server memory or CPU.
 
