@@ -47,7 +47,7 @@
 - [x] Bound the number of accounts the in-memory store will hold, so open registration cannot exhaust memory.
 - [x] Require email verification before an account can be used to sign in.
 - [x] Rotate the CSRF nonce after a successful sign-in to prevent pre-authentication token fixation.
-- [ ] Log authentication successes, failures, and rate-limit rejections so attacks are detectable.
+- [x] Log authentication successes, failures, and rate-limit rejections so attacks are detectable.
 
 ### Low
 

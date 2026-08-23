@@ -88,6 +88,10 @@ const seedDemoAccount = async () => {
   console.log('Seeded the demo account', email);
 };
 
+const logAuth = (event, outcome, fields) => {
+  console.log(JSON.stringify({ at: new Date().toISOString(), event, outcome, ...fields }));
+};
+
 const attempts = new Map();
 
 const clientAddress = (c) => {
@@ -282,22 +286,28 @@ app.post('/', async (c) => {
     [`signin:${clientAddress(c)}`, AUTH_MAX_PER_ADDRESS],
     [`account:${email.trim().toLowerCase()}`, AUTH_MAX_PER_ACCOUNT]
   ];
+  const address = clientAddress(c);
   if (tooManyAttempts(limits)) {
+    logAuth('signin', 'rate_limited', { email, address });
     c.header('Retry-After', String(AUTH_WINDOW / 1000));
     return c.html(renderSignIn(c, { email, error: 'Too many attempts. Please try again later.' }), 429);
   }
   if (!verifyCsrfToken(c, body.csrf)) {
     recordAttempt(limits);
+    logAuth('signin', 'csrf_rejected', { email, address });
     return c.html(renderSignIn(c, { email, error: 'Your session expired. Please try again.' }), 403);
   }
   const user = findUser(email);
   if (password.length > MAX_PASSWORD_LENGTH || !(await verifyPassword(user, password))) {
     recordAttempt(limits);
+    logAuth('signin', 'invalid_credentials', { email, address });
     return c.html(renderSignIn(c, { email, error: 'Invalid email or password.' }), 401);
   }
   if (!user.verified) {
+    logAuth('signin', 'unverified', { email: user.email, address });
     return c.html(renderSignIn(c, { email, error: 'Verify your email address before signing in.' }), 403);
   }
+  logAuth('signin', 'success', { email: user.email, address });
   clearAttempts(limits);
   deleteCookie(c, CSRF_COOKIE, cookieOptions(0));
   setCookie(c, SESSION_COOKIE, createSession(user.email), cookieOptions(SESSION_MAX_AGE));
@@ -318,13 +328,16 @@ app.post('/register', async (c) => {
   const body = await c.req.parseBody();
   const email = typeof body.email === 'string' ? body.email.trim() : '';
   const password = typeof body.password === 'string' ? body.password : '';
-  const limits = [[`register:${clientAddress(c)}`, AUTH_MAX_PER_ADDRESS]];
+  const address = clientAddress(c);
+  const limits = [[`register:${address}`, AUTH_MAX_PER_ADDRESS]];
   if (tooManyAttempts(limits)) {
+    logAuth('register', 'rate_limited', { email, address });
     c.header('Retry-After', String(AUTH_WINDOW / 1000));
     return c.html(renderRegister(c, { email, error: 'Too many attempts. Please try again later.' }), 429);
   }
   recordAttempt(limits);
   if (!verifyCsrfToken(c, body.csrf)) {
+    logAuth('register', 'csrf_rejected', { email, address });
     return c.html(renderRegister(c, { email, error: 'Your session expired. Please try again.' }), 403);
   }
   if (!email.includes('@')) {
@@ -340,15 +353,17 @@ app.post('/register', async (c) => {
     );
   }
   if (users.size >= MAX_ACCOUNTS) {
+    logAuth('register', 'capacity_reached', { email, address });
     return c.html(renderRegister(c, { email, error: 'Registration is temporarily unavailable.' }), 503);
   }
   if (findUser(email)) {
     await hashPassword(password, randomBytes(16).toString('hex'));
+    logAuth('register', 'already_registered', { email: email.toLowerCase(), address });
   } else {
     const user = await createUser(email, password);
     const link = new URL('/verify', c.req.url);
     link.searchParams.set('token', createVerificationToken(user.email));
-    console.log('Verification link for', user.email, link.toString());
+    logAuth('register', 'created', { email: user.email, address, link: link.toString() });
   }
   return c.html(eta.render('registered', { email: email.toLowerCase() }));
 });
@@ -356,9 +371,11 @@ app.post('/register', async (c) => {
 app.get('/verify', (c) => {
   const user = readVerificationToken(c.req.query('token'));
   if (!user) {
+    logAuth('verify', 'invalid_token', { address: clientAddress(c) });
     return c.html(renderSignIn(c, { error: 'That verification link is invalid or has expired.' }), 400);
   }
   user.verified = true;
+  logAuth('verify', 'success', { email: user.email, address: clientAddress(c) });
   return c.html(renderSignIn(c, { notice: 'Your email address is verified. You can sign in now.' }));
 });
 
@@ -372,9 +389,12 @@ app.get('/profile', (c) => {
 
 app.post('/signout', async (c) => {
   const body = await c.req.parseBody();
+  const session = readSession(getCookie(c, SESSION_COOKIE));
   if (!verifyCsrfToken(c, body.csrf)) {
+    logAuth('signout', 'csrf_rejected', { email: session ? session.email : '', address: clientAddress(c) });
     return c.redirect('/profile', 303);
   }
+  logAuth('signout', 'success', { email: session ? session.email : '', address: clientAddress(c) });
   revokeSession(getCookie(c, SESSION_COOKIE));
   deleteCookie(c, SESSION_COOKIE, cookieOptions(0));
   deleteCookie(c, CSRF_COOKIE, cookieOptions(0));
