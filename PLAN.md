@@ -43,7 +43,7 @@
 ### Medium
 
 - [x] Stop disclosing whether an email address is already registered; return a neutral registration response instead.
-- [ ] Restrict the `DEMO_EMAIL` and `DEMO_PASSWORD` seeding to development, and apply the password policy to the seeded account.
+- [x] Restrict the `DEMO_EMAIL` and `DEMO_PASSWORD` seeding to development, and apply the password policy to the seeded account.
 - [ ] Bound the number of accounts the in-memory store will hold, so open registration cannot exhaust memory.
 - [ ] Require email verification before an account can be used to sign in.
 - [ ] Rotate the CSRF nonce after a successful sign-in to prevent pre-authentication token fixation.

@@ -69,9 +69,21 @@ const verifyPassword = async (user, password) => {
 };
 
 const seedDemoAccount = async () => {
-  if (process.env.DEMO_EMAIL && process.env.DEMO_PASSWORD) {
-    await createUser(process.env.DEMO_EMAIL, process.env.DEMO_PASSWORD);
+  const email = process.env.DEMO_EMAIL;
+  const password = process.env.DEMO_PASSWORD;
+  if (!email || !password) {
+    return;
   }
+  if (!isDevelopment) {
+    console.error('Ignoring DEMO_EMAIL and DEMO_PASSWORD outside development');
+    return;
+  }
+  if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+    console.error(`Ignoring the demo account: DEMO_PASSWORD must be at least ${MIN_PASSWORD_LENGTH} characters`);
+    return;
+  }
+  await createUser(email, password);
+  console.log('Seeded the demo account', email);
 };
 
 const attempts = new Map();
