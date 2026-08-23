@@ -1,0 +1,9 @@
+<% layout('./layout', { title: 'Profile' }) %>
+<main class="container">
+  <article class="card">
+    <header>
+      <h1>Profile</h1>
+    </header>
+    <p>Signed in as <strong><%= it.email %></strong>.</p>
+  </article>
+</main>

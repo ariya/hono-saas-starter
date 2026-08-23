@@ -135,6 +135,14 @@ app.post('/', async (c) => {
   return c.redirect('/profile', 303);
 });
 
+app.get('/profile', (c) => {
+  const user = readSession(getCookie(c, SESSION_COOKIE));
+  if (!user) {
+    return c.redirect('/', 303);
+  }
+  return c.html(eta.render('profile', { email: user.email }));
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
