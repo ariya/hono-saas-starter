@@ -13,6 +13,6 @@
   "dependencies": {
     "@hono/node-server": "~1.19.14",
     "eta": "~3.5.0",
-    "hono": "~4.12.18"
+    "hono": "^4.12.34"
   }
 }
