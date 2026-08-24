@@ -23,6 +23,7 @@ See the following table for how different LLM coding assistants performed on thi
 | GPT 5.5 ([branch](../../tree/codex/gpt-5.5), [commits](../../commits/codex/gpt-5.5)) | Codex | 18 mins | $4.29 |
 | GLM 5.2 ([branch](../../tree/opencode/glm-5.2), [commits](../../commits/opencode/glm-5.2)) | OpenCode | 37 mins | $4.88 |
 | Opus 4.8 ([branch](../../tree/claude-code/opus-4.8), [commits](../../commits/claude-code/opus-4.8)) | Claude Code | 17 mins | $7.99 |
+| Opus 5 ([branch](../../tree/claude-code/opus-5), [commits](../../commits/claude-code/opus-5)) | Claude Code | 27 mins | $10.67 |
 | Fable 5 ([branch](../../tree/claude-code/fable-5), [commits](../../commits/claude-code/fable-5)) | Claude Code | 19 mins | $11.44 |
 | Gemini 3.5 Flash ([branch](../../tree/antigravity/gemini-3.5-flash), [commits](../../commits/antigravity/gemini-3.5-flash)) | Antigravity | 10 mins | N/A |
 
