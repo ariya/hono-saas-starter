@@ -43,7 +43,7 @@
 - [x] Configure a strict Content-Security-Policy compatible with the CDN assets.
 - [x] Send Cache-Control: no-store on authenticated pages and credential forms.
 - [x] Cap the number of in-memory user records to prevent memory exhaustion.
-- [ ] Prune the rate-limit store so it cannot grow without bound.
+- [x] Prune the rate-limit store so it cannot grow without bound.
 - [ ] Run the container as a non-root user.
 - [ ] Invalidate server-side session state on sign-out despite the stateless design.
 

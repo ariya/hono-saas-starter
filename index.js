@@ -108,7 +108,10 @@ if (!isProduction && process.env.SEED_DEMO_USER === 'true') {
 
 const rateLimitWindowMs = 15 * 60 * 1000;
 const rateLimitMax = 10;
+const rateLimitMaxEntries = 10000;
+const rateLimitPruneInterval = 500;
 const rateLimitHits = new Map();
+let rateLimitOps = 0;
 
 const clientKey = (c) => {
   try {
@@ -118,16 +121,22 @@ const clientKey = (c) => {
   }
 };
 
+const pruneRateLimitHits = (now) => {
+  for (const [key, value] of rateLimitHits) {
+    if (now > value.reset) rateLimitHits.delete(key);
+  }
+  while (rateLimitHits.size > rateLimitMaxEntries) {
+    rateLimitHits.delete(rateLimitHits.keys().next().value);
+  }
+};
+
 const authRateLimit = async (c, next) => {
   const key = clientKey(c);
   const now = Date.now();
+  rateLimitOps += 1;
+  if (rateLimitOps % rateLimitPruneInterval === 0) pruneRateLimitHits(now);
   const entry = rateLimitHits.get(key);
   if (!entry || now > entry.reset) {
-    if (rateLimitHits.size > 10000) {
-      for (const [k, v] of rateLimitHits) {
-        if (now > v.reset) rateLimitHits.delete(k);
-      }
-    }
     rateLimitHits.set(key, { count: 1, reset: now + rateLimitWindowMs });
   } else {
     entry.count += 1;
