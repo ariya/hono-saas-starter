@@ -8,6 +8,7 @@ const { Eta } = require('eta');
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
+const isProduction = process.env.NODE_ENV === 'production';
 
 const users = new Map();
 
@@ -53,7 +54,7 @@ app.post('/signin', async (c) => {
     path: '/',
     httpOnly: true,
     sameSite: 'Lax',
-    secure: true,
+    secure: isProduction,
     maxAge: 7 * 60 * 60
   });
   return c.redirect('/profile');
