@@ -20,3 +20,37 @@
 - [x] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [x] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
 - [x] Implement the /signout handler to clear session cookies and redirect to the landing page.
+
+## Security Audit
+
+### Critical
+
+- [ ] Remove the hardcoded demo account seeded with known credentials in all environments.
+- [ ] Add rate limiting to /signin and /register to prevent brute-force and credential stuffing.
+- [ ] Enforce a maximum request body size to prevent memory-exhaustion denial of service.
+
+### High
+
+- [ ] Add a maximum password length and reject oversized credentials.
+- [ ] Use asynchronous scrypt to avoid blocking the event loop during credential checks.
+- [ ] Bind CSRF tokens to a session and add an expiry to prevent indefinite replay.
+- [ ] Perform a dummy password hash for unknown accounts to prevent timing-based user enumeration.
+- [ ] Return an identical registration response whether or not the email already exists.
+- [ ] Add server-side email format validation and length limits.
+
+### Medium
+
+- [ ] Configure a strict Content-Security-Policy compatible with the CDN assets.
+- [ ] Send Cache-Control: no-store on authenticated pages and credential forms.
+- [ ] Cap the number of in-memory user records to prevent memory exhaustion.
+- [ ] Prune the rate-limit store so it cannot grow without bound.
+- [ ] Run the container as a non-root user.
+- [ ] Invalidate server-side session state on sign-out despite the stateless design.
+
+### Low
+
+- [ ] Use the __Host- cookie prefix for the session cookie.
+- [ ] Omit the timestamp from the unauthenticated /health response.
+- [ ] Derive CSRF signatures with a separate secret/context from session signatures.
+- [ ] Store an opaque session identifier instead of embedding the user email.
+- [ ] Pin dependency versions exactly to reduce supply-chain drift.
