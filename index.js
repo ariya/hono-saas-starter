@@ -43,7 +43,10 @@ app.post('/signin', async (c) => {
   const password = String(body.password || '');
   const user = users.get(email);
   if (!user || !verifyPassword(password, user)) {
-    return c.text('Invalid email or password', 401);
+    return c.html(
+      eta.render('signin', { title: 'Sign In', heading: pickWelcome(), error: 'Invalid email or password' }),
+      401
+    );
   }
   return c.text('Signed in');
 });

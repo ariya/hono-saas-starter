@@ -10,6 +10,9 @@
   <body>
     <main>
       <h1><%= it.heading %></h1>
+      <% if (it.error) { %>
+      <p role="alert"><%= it.error %></p>
+      <% } %>
       <form method="post" action="/signin">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required />
