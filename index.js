@@ -163,9 +163,10 @@ app.post('/register', authRateLimit, async (c) => {
     return renderRegister(c, `Password must be at most ${passwordMaxLength} characters long`, 400);
   }
   if (users.has(email)) {
-    return renderRegister(c, 'An account with that email already exists', 409);
+    await hashPassword(password, dummySalt);
+  } else {
+    await createUser(email, password);
   }
-  await createUser(email, password);
   return renderRegister(c, null, 200, 'Account created. Redirecting to sign in…');
 });
 
