@@ -32,6 +32,9 @@ const verifyPassword = async (password, user) => {
   return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 };
 
+const dummySalt = crypto.randomBytes(16).toString('hex');
+const dummyHash = crypto.scryptSync('dummy-password', dummySalt, 64).toString('hex');
+
 const signValue = (value) => crypto.createHmac('sha256', hmacSecret).update(value).digest('hex');
 
 const createSessionToken = (email) => {
@@ -179,7 +182,11 @@ app.post('/signin', authRateLimit, async (c) => {
     return renderSignin(c, 'Invalid email or password', 401);
   }
   const user = users.get(email);
-  if (!user || !(await verifyPassword(password, user))) {
+  if (!user) {
+    await verifyPassword(password, { passwordHash: dummyHash, salt: dummySalt });
+    return renderSignin(c, 'Invalid email or password', 401);
+  }
+  if (!(await verifyPassword(password, user))) {
     return renderSignin(c, 'Invalid email or password', 401);
   }
   setCookie(c, 'session', createSessionToken(user.email), {
