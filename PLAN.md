@@ -13,7 +13,7 @@
 - [x] Implement CSRF protection using an HMAC-signed token, passed via a hidden input field.
 - [x] Build the /profile route with session validation; redirect unauthenticated users to /.
 - [x] Update the landing page to auto-redirect active sessions to /profile.
-- [ ] Add a "Register for account" link to the sign-in interface.
+- [x] Add a "Register for account" link to the sign-in interface.
 - [ ] Create the /register route and an Eta-rendered registration page.
 - [ ] Enforce mininum password length (8 chars) on the server in the registration handler.
 - [ ] Implement registration logic: Save new users, display a success message, and auto-redirect to /.
