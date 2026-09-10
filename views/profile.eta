@@ -8,9 +8,13 @@
     <script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
   </head>
   <body>
+    <header>
+      <nav>
+        <span><%= it.email %></span>
+      </nav>
+    </header>
     <main>
       <h1>Profile</h1>
-      <p>Signed in as <%= it.email %>.</p>
     </main>
   </body>
 </html>
