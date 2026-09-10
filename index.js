@@ -3,6 +3,7 @@ const crypto = require('node:crypto');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
+const { setCookie, getCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const app = new Hono();
@@ -48,7 +49,8 @@ app.post('/signin', async (c) => {
       401
     );
   }
-  return c.text('Signed in');
+  setCookie(c, 'session', user.email, { path: '/', httpOnly: true, sameSite: 'Lax' });
+  return c.redirect('/profile');
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
