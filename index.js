@@ -14,6 +14,7 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 const isProduction = process.env.NODE_ENV === 'production';
 
 const users = new Map();
+const maxUsers = Number(process.env.MAX_USERS) || 10000;
 const sessionMaxAge = 7 * 60 * 60;
 const passwordMinLength = 8;
 const passwordMaxLength = 128;
@@ -210,6 +211,8 @@ app.post('/register', authRateLimit, async (c) => {
   }
   if (users.has(email)) {
     await hashPassword(password, dummySalt);
+  } else if (users.size >= maxUsers) {
+    return renderRegister(c, 'Registration is temporarily unavailable', 503);
   } else {
     await createUser(email, password);
   }
