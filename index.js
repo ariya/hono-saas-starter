@@ -1,5 +1,6 @@
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { promisify } = require('node:util');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { getConnInfo } = require('@hono/node-server/conninfo');
@@ -21,11 +22,13 @@ if (!hmacSecret) {
   throw new Error('HMAC_SECRET environment variable is required');
 }
 
-const hashPassword = (password, salt) => crypto.scryptSync(password, salt, 64).toString('hex');
+const scryptAsync = promisify(crypto.scrypt);
 
-const verifyPassword = (password, user) => {
+const hashPassword = async (password, salt) => (await scryptAsync(password, salt, 64)).toString('hex');
+
+const verifyPassword = async (password, user) => {
   const expected = Buffer.from(user.passwordHash, 'hex');
-  const actual = Buffer.from(hashPassword(password, user.salt), 'hex');
+  const actual = Buffer.from(await hashPassword(password, user.salt), 'hex');
   return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 };
 
@@ -63,16 +66,16 @@ const verifyCsrfToken = (token) => {
   return signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 };
 
-const createUser = (email, password) => {
+const createUser = async (email, password) => {
   const normalized = email.trim().toLowerCase();
   const salt = crypto.randomBytes(16).toString('hex');
-  const passwordHash = hashPassword(password, salt);
+  const passwordHash = await hashPassword(password, salt);
   users.set(normalized, { email: normalized, passwordHash, salt });
   return users.get(normalized);
 };
 
 if (!isProduction && process.env.SEED_DEMO_USER === 'true') {
-  createUser('demo@example.com', 'password123');
+  createUser('demo@example.com', 'password123').catch(() => {});
 }
 
 const rateLimitWindowMs = 15 * 60 * 1000;
@@ -159,7 +162,7 @@ app.post('/register', authRateLimit, async (c) => {
   if (users.has(email)) {
     return renderRegister(c, 'An account with that email already exists', 409);
   }
-  createUser(email, password);
+  await createUser(email, password);
   return renderRegister(c, null, 200, 'Account created. Redirecting to sign in…');
 });
 
@@ -176,7 +179,7 @@ app.post('/signin', authRateLimit, async (c) => {
     return renderSignin(c, 'Invalid email or password', 401);
   }
   const user = users.get(email);
-  if (!user || !verifyPassword(password, user)) {
+  if (!user || !(await verifyPassword(password, user))) {
     return renderSignin(c, 'Invalid email or password', 401);
   }
   setCookie(c, 'session', createSessionToken(user.email), {

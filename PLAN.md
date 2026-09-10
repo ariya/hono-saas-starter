@@ -32,7 +32,7 @@
 ### High
 
 - [x] Add a maximum password length and reject oversized credentials.
-- [ ] Use asynchronous scrypt to avoid blocking the event loop during credential checks.
+- [x] Use asynchronous scrypt to avoid blocking the event loop during credential checks.
 - [ ] Bind CSRF tokens to a session and add an expiry to prevent indefinite replay.
 - [ ] Perform a dummy password hash for unknown accounts to prevent timing-based user enumeration.
 - [ ] Return an identical registration response whether or not the email already exists.
