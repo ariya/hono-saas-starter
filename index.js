@@ -46,6 +46,19 @@ const verifySessionToken = (token) => {
   return email;
 };
 
+const createCsrfToken = () => {
+  const nonce = crypto.randomBytes(16).toString('hex');
+  return `${nonce}.${signValue(`csrf:${nonce}`)}`;
+};
+
+const verifyCsrfToken = (token) => {
+  if (!token) return false;
+  const [nonce, signature] = token.split('.');
+  if (!nonce || !signature) return false;
+  const expected = signValue(`csrf:${nonce}`);
+  return signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+};
+
 const createUser = (email, password) => {
   const normalized = email.trim().toLowerCase();
   const salt = crypto.randomBytes(16).toString('hex');
@@ -61,7 +74,13 @@ app.use(secureHeaders());
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello again', 'Good to see you', 'Sign in to continue'];
 const pickWelcome = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
-app.get('/', (c) => c.html(eta.render('signin', { title: 'Sign In', heading: pickWelcome() })));
+const renderSignin = (c, error, status = 200) =>
+  c.html(
+    eta.render('signin', { title: 'Sign In', heading: pickWelcome(), csrfToken: createCsrfToken(), error }),
+    status
+  );
+
+app.get('/', (c) => renderSignin(c));
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
@@ -69,12 +88,12 @@ app.post('/signin', async (c) => {
     .trim()
     .toLowerCase();
   const password = String(body.password || '');
+  if (!verifyCsrfToken(String(body.csrfToken || ''))) {
+    return renderSignin(c, 'Invalid or expired form token', 403);
+  }
   const user = users.get(email);
   if (!user || !verifyPassword(password, user)) {
-    return c.html(
-      eta.render('signin', { title: 'Sign In', heading: pickWelcome(), error: 'Invalid email or password' }),
-      401
-    );
+    return renderSignin(c, 'Invalid email or password', 401);
   }
   setCookie(c, 'session', createSessionToken(user.email), {
     path: '/',
