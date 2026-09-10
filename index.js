@@ -59,16 +59,37 @@ const verifySessionToken = (token) => {
   return email;
 };
 
-const createCsrfToken = () => {
-  const nonce = crypto.randomBytes(16).toString('hex');
-  return `${nonce}.${signValue(`csrf:${nonce}`)}`;
+const csrfMaxAge = 2 * 60 * 60 * 1000;
+
+const csrfBinding = (c) => {
+  const session = getCookie(c, 'session');
+  if (session) return session;
+  let csrfId = getCookie(c, 'csrf');
+  if (!csrfId) {
+    csrfId = crypto.randomBytes(32).toString('hex');
+    setCookie(c, 'csrf', csrfId, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Strict',
+      secure: isProduction,
+      maxAge: sessionMaxAge
+    });
+  }
+  return csrfId;
 };
 
-const verifyCsrfToken = (token) => {
+const createCsrfToken = (c) => {
+  const expiry = Date.now() + csrfMaxAge;
+  return `${expiry}.${signValue(`csrf:${csrfBinding(c)}:${expiry}`)}`;
+};
+
+const verifyCsrfToken = (c, token) => {
   if (!token) return false;
-  const [nonce, signature] = token.split('.');
-  if (!nonce || !signature) return false;
-  const expected = signValue(`csrf:${nonce}`);
+  const [expiry, signature] = token.split('.');
+  if (!expiry || !signature || Number(expiry) < Date.now()) return false;
+  const binding = getCookie(c, 'session') || getCookie(c, 'csrf');
+  if (!binding) return false;
+  const expected = signValue(`csrf:${binding}:${expiry}`);
   return signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 };
 
@@ -124,7 +145,7 @@ const pickWelcome = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles
 
 const renderSignin = (c, error, status = 200) =>
   c.html(
-    eta.render('signin', { title: 'Sign In', heading: pickWelcome(), csrfToken: createCsrfToken(), error }),
+    eta.render('signin', { title: 'Sign In', heading: pickWelcome(), csrfToken: createCsrfToken(c), error }),
     status
   );
 
@@ -138,7 +159,7 @@ const renderRegister = (c, error, status = 200, message = null) =>
     eta.render('register', {
       title: 'Register',
       heading: 'Create your account',
-      csrfToken: createCsrfToken(),
+      csrfToken: createCsrfToken(c),
       error,
       message
     }),
@@ -153,7 +174,7 @@ app.post('/register', authRateLimit, async (c) => {
     .trim()
     .toLowerCase();
   const password = String(body.password || '');
-  if (!verifyCsrfToken(String(body.csrfToken || ''))) {
+  if (!verifyCsrfToken(c, String(body.csrfToken || ''))) {
     return renderRegister(c, 'Invalid or expired form token', 403);
   }
   if (!isValidEmail(email)) {
@@ -179,7 +200,7 @@ app.post('/signin', authRateLimit, async (c) => {
     .trim()
     .toLowerCase();
   const password = String(body.password || '');
-  if (!verifyCsrfToken(String(body.csrfToken || ''))) {
+  if (!verifyCsrfToken(c, String(body.csrfToken || ''))) {
     return renderSignin(c, 'Invalid or expired form token', 403);
   }
   if (password.length > passwordMaxLength) {
@@ -206,12 +227,12 @@ app.post('/signin', authRateLimit, async (c) => {
 app.get('/profile', (c) => {
   const email = verifySessionToken(getCookie(c, 'session'));
   if (!email) return c.redirect('/');
-  return c.html(eta.render('profile', { title: 'Profile', email, csrfToken: createCsrfToken() }));
+  return c.html(eta.render('profile', { title: 'Profile', email, csrfToken: createCsrfToken(c) }));
 });
 
 app.post('/signout', async (c) => {
   const body = await c.req.parseBody();
-  if (!verifyCsrfToken(String(body.csrfToken || ''))) {
+  if (!verifyCsrfToken(c, String(body.csrfToken || ''))) {
     return c.text('Invalid or expired form token', 403);
   }
   deleteCookie(c, 'session', { path: '/' });
