@@ -12,7 +12,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 const users = new Map();
 const sessionMaxAge = 7 * 60 * 60;
-const hmacSecret = 'dev-secret';
+const hmacSecret = process.env.HMAC_SECRET || (isProduction ? null : crypto.randomBytes(32).toString('hex'));
+if (!hmacSecret) {
+  throw new Error('HMAC_SECRET environment variable is required');
+}
 
 const hashPassword = (password, salt) => crypto.scryptSync(password, salt, 64).toString('hex');
 
