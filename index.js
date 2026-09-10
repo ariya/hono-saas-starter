@@ -9,7 +9,10 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 
 app.use(secureHeaders());
 
-app.get('/', (c) => c.html(eta.render('signin', { title: 'Sign In', heading: 'Welcome' })));
+const welcomeTitles = ['Welcome', 'Welcome back', 'Hello again', 'Good to see you', 'Sign in to continue'];
+const pickWelcome = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
+
+app.get('/', (c) => c.html(eta.render('signin', { title: 'Sign In', heading: pickWelcome() })));
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
