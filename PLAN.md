@@ -45,7 +45,7 @@
 - [x] Cap the number of in-memory user records to prevent memory exhaustion.
 - [x] Prune the rate-limit store so it cannot grow without bound.
 - [x] Run the container as a non-root user.
-- [ ] Invalidate server-side session state on sign-out despite the stateless design.
+- [x] Invalidate server-side session state on sign-out despite the stateless design.
 
 ### Low
 

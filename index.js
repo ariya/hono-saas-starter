@@ -15,6 +15,8 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 const users = new Map();
 const maxUsers = Number(process.env.MAX_USERS) || 10000;
+const revokedSessions = new Map();
+const sessionRevokeMaxEntries = 10000;
 const sessionMaxAge = 7 * 60 * 60;
 const passwordMinLength = 8;
 const passwordMaxLength = 128;
@@ -55,9 +57,34 @@ const verifySessionToken = (token) => {
   if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
     return null;
   }
+  if (revokedSessions.has(signature)) return null;
   const [email, expiry] = payload.split(':');
   if (!email || !expiry || Number(expiry) < Date.now()) return null;
   return email;
+};
+
+const pruneRevokedSessions = (now) => {
+  for (const [signature, expiry] of revokedSessions) {
+    if (now > expiry) revokedSessions.delete(signature);
+  }
+  while (revokedSessions.size > sessionRevokeMaxEntries) {
+    revokedSessions.delete(revokedSessions.keys().next().value);
+  }
+};
+
+const revokeSession = (token) => {
+  if (!token) return;
+  const [encoded, signature] = token.split('.');
+  if (!signature) return;
+  let expiry = Date.now() + sessionMaxAge * 1000;
+  try {
+    const parsed = Number(Buffer.from(encoded, 'base64url').toString().split(':')[1]);
+    if (!Number.isNaN(parsed)) expiry = parsed;
+  } catch {
+    expiry = Date.now() + sessionMaxAge * 1000;
+  }
+  revokedSessions.set(signature, expiry);
+  pruneRevokedSessions(Date.now());
 };
 
 const csrfMaxAge = 2 * 60 * 60 * 1000;
@@ -269,6 +296,7 @@ app.post('/signout', async (c) => {
   if (!verifyCsrfToken(c, String(body.csrfToken || ''))) {
     return c.text('Invalid or expired form token', 403);
   }
+  revokeSession(getCookie(c, 'session'));
   deleteCookie(c, 'session', { path: '/' });
   return c.redirect('/');
 });
