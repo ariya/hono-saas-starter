@@ -80,7 +80,10 @@ const renderSignin = (c, error, status = 200) =>
     status
   );
 
-app.get('/', (c) => renderSignin(c));
+app.get('/', (c) => {
+  if (verifySessionToken(getCookie(c, 'session'))) return c.redirect('/profile');
+  return renderSignin(c);
+});
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
