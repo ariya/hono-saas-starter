@@ -67,7 +67,9 @@ const createUser = (email, password) => {
   return users.get(normalized);
 };
 
-createUser('demo@example.com', 'password123');
+if (!isProduction && process.env.SEED_DEMO_USER === 'true') {
+  createUser('demo@example.com', 'password123');
+}
 
 app.use(secureHeaders());
 

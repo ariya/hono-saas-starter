@@ -25,7 +25,7 @@
 
 ### Critical
 
-- [ ] Remove the hardcoded demo account seeded with known credentials in all environments.
+- [x] Remove the hardcoded demo account seeded with known credentials in all environments.
 - [ ] Add rate limiting to /signin and /register to prevent brute-force and credential stuffing.
 - [ ] Enforce a maximum request body size to prevent memory-exhaustion denial of service.
 
