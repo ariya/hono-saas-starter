@@ -11,14 +11,37 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 const isProduction = process.env.NODE_ENV === 'production';
 
 const users = new Map();
+const sessionMaxAge = 7 * 60 * 60;
+const hmacSecret = 'dev-secret';
 
-const hashPassword = (password, salt) =>
-  crypto
-    .createHash('sha256')
-    .update(salt + password)
-    .digest('hex');
+const hashPassword = (password, salt) => crypto.scryptSync(password, salt, 64).toString('hex');
 
-const verifyPassword = (password, user) => hashPassword(password, user.salt) === user.passwordHash;
+const verifyPassword = (password, user) => {
+  const expected = Buffer.from(user.passwordHash, 'hex');
+  const actual = Buffer.from(hashPassword(password, user.salt), 'hex');
+  return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+};
+
+const signValue = (value) => crypto.createHmac('sha256', hmacSecret).update(value).digest('hex');
+
+const createSessionToken = (email) => {
+  const payload = `${email}:${Date.now() + sessionMaxAge * 1000}`;
+  return `${Buffer.from(payload).toString('base64url')}.${signValue(payload)}`;
+};
+
+const verifySessionToken = (token) => {
+  if (!token) return null;
+  const [encoded, signature] = token.split('.');
+  if (!encoded || !signature) return null;
+  const payload = Buffer.from(encoded, 'base64url').toString();
+  const expected = signValue(payload);
+  if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+    return null;
+  }
+  const [email, expiry] = payload.split(':');
+  if (!email || !expiry || Number(expiry) < Date.now()) return null;
+  return email;
+};
 
 const createUser = (email, password) => {
   const normalized = email.trim().toLowerCase();
@@ -50,12 +73,12 @@ app.post('/signin', async (c) => {
       401
     );
   }
-  setCookie(c, 'session', user.email, {
+  setCookie(c, 'session', createSessionToken(user.email), {
     path: '/',
     httpOnly: true,
     sameSite: 'Lax',
     secure: isProduction,
-    maxAge: 7 * 60 * 60
+    maxAge: sessionMaxAge
   });
   return c.redirect('/profile');
 });
