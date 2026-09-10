@@ -16,6 +16,8 @@ const hashPassword = (password, salt) =>
     .update(salt + password)
     .digest('hex');
 
+const verifyPassword = (password, user) => hashPassword(password, user.salt) === user.passwordHash;
+
 const createUser = (email, password) => {
   const normalized = email.trim().toLowerCase();
   const salt = crypto.randomBytes(16).toString('hex');
@@ -32,6 +34,19 @@ const welcomeTitles = ['Welcome', 'Welcome back', 'Hello again', 'Good to see yo
 const pickWelcome = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
 
 app.get('/', (c) => c.html(eta.render('signin', { title: 'Sign In', heading: pickWelcome() })));
+
+app.post('/signin', async (c) => {
+  const body = await c.req.parseBody();
+  const email = String(body.email || '')
+    .trim()
+    .toLowerCase();
+  const password = String(body.password || '');
+  const user = users.get(email);
+  if (!user || !verifyPassword(password, user)) {
+    return c.text('Invalid email or password', 401);
+  }
+  return c.text('Signed in');
+});
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
