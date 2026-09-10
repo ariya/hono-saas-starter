@@ -150,6 +150,15 @@ app.get('/profile', (c) => {
   return c.html(eta.render('profile', { title: 'Profile', email, csrfToken: createCsrfToken() }));
 });
 
+app.post('/signout', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(String(body.csrfToken || ''))) {
+    return c.text('Invalid or expired form token', 403);
+  }
+  deleteCookie(c, 'session', { path: '/' });
+  return c.redirect('/');
+});
+
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 const port = process.env.PORT || 3000;
