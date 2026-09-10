@@ -36,7 +36,7 @@
 - [ ] Bind CSRF tokens to a session and add an expiry to prevent indefinite replay.
 - [x] Perform a dummy password hash for unknown accounts to prevent timing-based user enumeration.
 - [x] Return an identical registration response whether or not the email already exists.
-- [ ] Add server-side email format validation and length limits.
+- [x] Add server-side email format validation and length limits.
 
 ### Medium
 

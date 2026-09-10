@@ -17,6 +17,9 @@ const users = new Map();
 const sessionMaxAge = 7 * 60 * 60;
 const passwordMinLength = 8;
 const passwordMaxLength = 128;
+const emailMaxLength = 254;
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const isValidEmail = (email) => email.length > 0 && email.length <= emailMaxLength && emailPattern.test(email);
 const hmacSecret = process.env.HMAC_SECRET || (isProduction ? null : crypto.randomBytes(32).toString('hex'));
 if (!hmacSecret) {
   throw new Error('HMAC_SECRET environment variable is required');
@@ -153,8 +156,8 @@ app.post('/register', authRateLimit, async (c) => {
   if (!verifyCsrfToken(String(body.csrfToken || ''))) {
     return renderRegister(c, 'Invalid or expired form token', 403);
   }
-  if (!email) {
-    return renderRegister(c, 'Email is required', 400);
+  if (!isValidEmail(email)) {
+    return renderRegister(c, 'Please enter a valid email address', 400);
   }
   if (password.length < passwordMinLength) {
     return renderRegister(c, `Password must be at least ${passwordMinLength} characters long`, 400);
