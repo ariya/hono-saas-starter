@@ -154,6 +154,10 @@ app.use(
   })
 );
 app.use(bodyLimit({ maxSize: 16 * 1024, onError: (c) => c.text('Payload too large', 413) }));
+app.use(async (c, next) => {
+  await next();
+  c.header('Cache-Control', 'no-store');
+});
 
 const appStyles = 'nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }';
 app.get('/app.css', (c) => c.body(appStyles, 200, { 'Content-Type': 'text/css; charset=utf-8' }));
