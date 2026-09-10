@@ -27,7 +27,7 @@
 
 - [x] Remove the hardcoded demo account seeded with known credentials in all environments.
 - [x] Add rate limiting to /signin and /register to prevent brute-force and credential stuffing.
-- [ ] Enforce a maximum request body size to prevent memory-exhaustion denial of service.
+- [x] Enforce a maximum request body size to prevent memory-exhaustion denial of service.
 
 ### High
 

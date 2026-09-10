@@ -4,6 +4,7 @@ const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { getConnInfo } = require('@hono/node-server/conninfo');
 const { secureHeaders } = require('hono/secure-headers');
+const { bodyLimit } = require('hono/body-limit');
 const { setCookie, getCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
@@ -105,6 +106,7 @@ const authRateLimit = async (c, next) => {
 };
 
 app.use(secureHeaders());
+app.use(bodyLimit({ maxSize: 16 * 1024, onError: (c) => c.text('Payload too large', 413) }));
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello again', 'Good to see you', 'Sign in to continue'];
 const pickWelcome = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
