@@ -85,9 +85,15 @@ app.get('/', (c) => {
   return renderSignin(c);
 });
 
-const renderRegister = (c, error, status = 200) =>
+const renderRegister = (c, error, status = 200, message = null) =>
   c.html(
-    eta.render('register', { title: 'Register', heading: 'Create your account', csrfToken: createCsrfToken(), error }),
+    eta.render('register', {
+      title: 'Register',
+      heading: 'Create your account',
+      csrfToken: createCsrfToken(),
+      error,
+      message
+    }),
     status
   );
 
@@ -95,14 +101,24 @@ app.get('/register', (c) => renderRegister(c));
 
 app.post('/register', async (c) => {
   const body = await c.req.parseBody();
+  const email = String(body.email || '')
+    .trim()
+    .toLowerCase();
   const password = String(body.password || '');
   if (!verifyCsrfToken(String(body.csrfToken || ''))) {
     return renderRegister(c, 'Invalid or expired form token', 403);
   }
+  if (!email) {
+    return renderRegister(c, 'Email is required', 400);
+  }
   if (password.length < 8) {
     return renderRegister(c, 'Password must be at least 8 characters long', 400);
   }
-  return c.text('Registration accepted');
+  if (users.has(email)) {
+    return renderRegister(c, 'An account with that email already exists', 409);
+  }
+  createUser(email, password);
+  return renderRegister(c, null, 200, 'Account created. Redirecting to sign in…');
 });
 
 app.post('/signin', async (c) => {
