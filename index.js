@@ -85,6 +85,14 @@ app.get('/', (c) => {
   return renderSignin(c);
 });
 
+const renderRegister = (c, error, status = 200) =>
+  c.html(
+    eta.render('register', { title: 'Register', heading: 'Create your account', csrfToken: createCsrfToken(), error }),
+    status
+  );
+
+app.get('/register', (c) => renderRegister(c));
+
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
   const email = String(body.email || '')
