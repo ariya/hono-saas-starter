@@ -2,6 +2,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
+const { getConnInfo } = require('@hono/node-server/conninfo');
 const { secureHeaders } = require('hono/secure-headers');
 const { setCookie, getCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
@@ -71,6 +72,38 @@ if (!isProduction && process.env.SEED_DEMO_USER === 'true') {
   createUser('demo@example.com', 'password123');
 }
 
+const rateLimitWindowMs = 15 * 60 * 1000;
+const rateLimitMax = 10;
+const rateLimitHits = new Map();
+
+const clientKey = (c) => {
+  try {
+    return getConnInfo(c).remote.address || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+};
+
+const authRateLimit = async (c, next) => {
+  const key = clientKey(c);
+  const now = Date.now();
+  const entry = rateLimitHits.get(key);
+  if (!entry || now > entry.reset) {
+    if (rateLimitHits.size > 10000) {
+      for (const [k, v] of rateLimitHits) {
+        if (now > v.reset) rateLimitHits.delete(k);
+      }
+    }
+    rateLimitHits.set(key, { count: 1, reset: now + rateLimitWindowMs });
+  } else {
+    entry.count += 1;
+    if (entry.count > rateLimitMax) {
+      return c.text('Too many attempts, please try again later', 429);
+    }
+  }
+  await next();
+};
+
 app.use(secureHeaders());
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello again', 'Good to see you', 'Sign in to continue'];
@@ -101,7 +134,7 @@ const renderRegister = (c, error, status = 200, message = null) =>
 
 app.get('/register', (c) => renderRegister(c));
 
-app.post('/register', async (c) => {
+app.post('/register', authRateLimit, async (c) => {
   const body = await c.req.parseBody();
   const email = String(body.email || '')
     .trim()
@@ -123,7 +156,7 @@ app.post('/register', async (c) => {
   return renderRegister(c, null, 200, 'Account created. Redirecting to sign in…');
 });
 
-app.post('/signin', async (c) => {
+app.post('/signin', authRateLimit, async (c) => {
   const body = await c.req.parseBody();
   const email = String(body.email || '')
     .trim()
