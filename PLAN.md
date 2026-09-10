@@ -31,7 +31,7 @@
 
 ### High
 
-- [ ] Add a maximum password length and reject oversized credentials.
+- [x] Add a maximum password length and reject oversized credentials.
 - [ ] Use asynchronous scrypt to avoid blocking the event loop during credential checks.
 - [ ] Bind CSRF tokens to a session and add an expiry to prevent indefinite replay.
 - [ ] Perform a dummy password hash for unknown accounts to prevent timing-based user enumeration.

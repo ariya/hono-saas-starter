@@ -14,6 +14,8 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 const users = new Map();
 const sessionMaxAge = 7 * 60 * 60;
+const passwordMinLength = 8;
+const passwordMaxLength = 128;
 const hmacSecret = process.env.HMAC_SECRET || (isProduction ? null : crypto.randomBytes(32).toString('hex'));
 if (!hmacSecret) {
   throw new Error('HMAC_SECRET environment variable is required');
@@ -148,8 +150,11 @@ app.post('/register', authRateLimit, async (c) => {
   if (!email) {
     return renderRegister(c, 'Email is required', 400);
   }
-  if (password.length < 8) {
-    return renderRegister(c, 'Password must be at least 8 characters long', 400);
+  if (password.length < passwordMinLength) {
+    return renderRegister(c, `Password must be at least ${passwordMinLength} characters long`, 400);
+  }
+  if (password.length > passwordMaxLength) {
+    return renderRegister(c, `Password must be at most ${passwordMaxLength} characters long`, 400);
   }
   if (users.has(email)) {
     return renderRegister(c, 'An account with that email already exists', 409);
@@ -166,6 +171,9 @@ app.post('/signin', authRateLimit, async (c) => {
   const password = String(body.password || '');
   if (!verifyCsrfToken(String(body.csrfToken || ''))) {
     return renderSignin(c, 'Invalid or expired form token', 403);
+  }
+  if (password.length > passwordMaxLength) {
+    return renderSignin(c, 'Invalid email or password', 401);
   }
   const user = users.get(email);
   if (!user || !verifyPassword(password, user)) {
