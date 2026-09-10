@@ -93,6 +93,18 @@ const renderRegister = (c, error, status = 200) =>
 
 app.get('/register', (c) => renderRegister(c));
 
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  const password = String(body.password || '');
+  if (!verifyCsrfToken(String(body.csrfToken || ''))) {
+    return renderRegister(c, 'Invalid or expired form token', 403);
+  }
+  if (password.length < 8) {
+    return renderRegister(c, 'Password must be at least 8 characters long', 400);
+  }
+  return c.text('Registration accepted');
+});
+
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
   const email = String(body.email || '')
