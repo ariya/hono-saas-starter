@@ -9,8 +9,12 @@
   </head>
   <body>
     <header>
-      <nav>
+      <nav style="display: flex; justify-content: space-between; align-items: center; gap: 1rem">
         <span><%= it.email %></span>
+        <form method="post" action="/signout">
+          <input type="hidden" name="csrfToken" value="<%= it.csrfToken %>" />
+          <button type="submit">Sign Out</button>
+        </form>
       </nav>
     </header>
     <main>

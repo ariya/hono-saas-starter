@@ -147,7 +147,7 @@ app.post('/signin', async (c) => {
 app.get('/profile', (c) => {
   const email = verifySessionToken(getCookie(c, 'session'));
   if (!email) return c.redirect('/');
-  return c.html(eta.render('profile', { title: 'Profile', email }));
+  return c.html(eta.render('profile', { title: 'Profile', email, csrfToken: createCsrfToken() }));
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
