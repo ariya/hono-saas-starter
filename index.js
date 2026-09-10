@@ -137,8 +137,26 @@ const authRateLimit = async (c, next) => {
   await next();
 };
 
-app.use(secureHeaders());
+app.use(
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", 'https://unpkg.com'],
+      styleSrc: ["'self'", 'https://unpkg.com'],
+      imgSrc: ["'self'", 'data:'],
+      fontSrc: ["'self'", 'https://unpkg.com'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"]
+    }
+  })
+);
 app.use(bodyLimit({ maxSize: 16 * 1024, onError: (c) => c.text('Payload too large', 413) }));
+
+const appStyles = 'nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }';
+app.get('/app.css', (c) => c.body(appStyles, 200, { 'Content-Type': 'text/css; charset=utf-8' }));
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello again', 'Good to see you', 'Sign in to continue'];
 const pickWelcome = () => welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];

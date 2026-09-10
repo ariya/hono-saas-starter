@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title><%= it.title %></title>
     <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css" />
+    <link rel="stylesheet" href="/app.css" />
     <script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
   </head>
   <body>
     <header>
-      <nav style="display: flex; justify-content: space-between; align-items: center; gap: 1rem">
+      <nav>
         <span><%= it.email %></span>
         <form method="post" action="/signout">
           <input type="hidden" name="csrfToken" value="<%= it.csrfToken %>" />
