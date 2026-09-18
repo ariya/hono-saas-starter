@@ -14,6 +14,7 @@ See the following table for how different LLM coding assistants performed on thi
 | Model | Harness | Duration | Cost |
 |---|---|:---:|---:|
 | DeepSeek V4 Flash ([branch](../../tree/opencode/deepseek-v4-flash), [commits](../../commits/opencode/deepseek-v4-flash)) | OpenCode | 29 mins | $0.04 |
+| DeepSeek V4.1 Flash ([branch](../../tree/opencode/deepseek-v4.1-flash), [commits](../../commits/opencode/deepseek-v4.1-flash)) | OpenCode | 19 mins | $0.10 |
 | Kimi K2.6 ([branch](../../tree/opencode/kimi-2.6), [commits](../../commits/opencode/kimi-2.6)) | OpenCode | 17 mins | $1.16 |
 | MiniMax M3 ([branch](../../tree/opencode/minimax-m3), [commits](../../commits/opencode/minimax-m3)) | OpenCode | 24 mins | $1.50 |
 | Sonnet 4.6 ([branch](../../tree/claude-code/sonnet-4.6), [commits](../../commits/claude-code/sonnet-4.6)) | Claude Code | 13 mins | $3.39 |
