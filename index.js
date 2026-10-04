@@ -9,7 +9,7 @@ const { Eta } = require('eta');
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 const isProduction = process.env.NODE_ENV === 'production';
-const sessionSecret = crypto.randomBytes(32).toString('hex');
+const sessionSecret = process.env.HMAC_SECRET || crypto.randomBytes(32).toString('hex');
 const SESSION_MAX_AGE = 7 * 60 * 60;
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see you', 'Sign in to continue'];
