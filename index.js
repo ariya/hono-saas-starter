@@ -3,7 +3,7 @@ const path = require('node:path');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
-const { setCookie, getCookie } = require('hono/cookie');
+const { setCookie, getCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const app = new Hono();
@@ -104,6 +104,11 @@ app.get('/', (c) => {
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 app.get('/register', (c) => renderRegister(c, 200));
+
+app.get('/signout', (c) => {
+  deleteCookie(c, 'session', { path: '/' });
+  return c.redirect('/');
+});
 
 app.get('/profile', (c) => {
   const email = decodeSession(getCookie(c, 'session'));
