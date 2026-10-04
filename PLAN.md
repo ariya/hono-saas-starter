@@ -35,7 +35,7 @@
 - [x] Force the session cookie `Secure` attribute unless explicitly running in development.
 - [x] Validate registration and sign-in input (email format and maximum lengths) on the server.
 - [x] Remove account enumeration from the duplicate-email error and the sign-in timing difference.
-- [ ] Bind CSRF tokens to a session or double-submit cookie so they cannot be replayed across users.
+- [x] Bind CSRF tokens to a session or double-submit cookie so they cannot be replayed across users.
 - [ ] Remove the unused third-party JavaScript from unpkg or add Subresource Integrity attributes.
 
 ### Medium
