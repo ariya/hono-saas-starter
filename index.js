@@ -34,11 +34,15 @@ const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 200;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const rateLimitStore = new Map();
+const revokedSessions = new Map();
 
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of rateLimitStore) {
     if (now > entry.resetAt) rateLimitStore.delete(key);
+  }
+  for (const [jti, expiry] of revokedSessions) {
+    if (now > expiry) revokedSessions.delete(jti);
   }
 }, RATE_LIMIT_WINDOW_MS).unref();
 
@@ -81,9 +85,9 @@ async function verifyPassword(user, password) {
 }
 
 function encodeSession(email) {
-  const payload = Buffer.from(JSON.stringify({ email, exp: Date.now() + SESSION_MAX_AGE * 1000 })).toString(
-    'base64url'
-  );
+  const payload = Buffer.from(
+    JSON.stringify({ email, jti: crypto.randomBytes(16).toString('hex'), exp: Date.now() + SESSION_MAX_AGE * 1000 })
+  ).toString('base64url');
   const signature = crypto.createHmac('sha256', sessionSecret).update(payload).digest('base64url');
   return `${payload}.${signature}`;
 }
@@ -104,10 +108,17 @@ function decodeSession(token) {
   } catch {
     return null;
   }
-  if (!data || typeof data.email !== 'string' || typeof data.exp !== 'number' || data.exp < Date.now()) {
+  if (
+    !data ||
+    typeof data.email !== 'string' ||
+    typeof data.jti !== 'string' ||
+    typeof data.exp !== 'number' ||
+    data.exp < Date.now()
+  ) {
     return null;
   }
-  return getUser(data.email) ? data.email : null;
+  if (revokedSessions.has(data.jti) || !getUser(data.email)) return null;
+  return { email: data.email, jti: data.jti, exp: data.exp };
 }
 
 function createCsrfToken(c) {
@@ -184,14 +195,16 @@ app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 app.get('/register', (c) => renderRegister(c, 200));
 
 app.get('/signout', (c) => {
+  const session = decodeSession(getCookie(c, 'session'));
+  if (session) revokedSessions.set(session.jti, session.exp);
   deleteCookie(c, 'session', { path: '/' });
   return c.redirect('/');
 });
 
 app.get('/profile', (c) => {
-  const email = decodeSession(getCookie(c, 'session'));
-  if (!email) return c.redirect('/');
-  return c.html(eta.render('profile', { email }));
+  const session = decodeSession(getCookie(c, 'session'));
+  if (!session) return c.redirect('/');
+  return c.html(eta.render('profile', { email: session.email }));
 });
 
 app.post('/signin', async (c) => {

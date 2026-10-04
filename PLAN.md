@@ -42,7 +42,7 @@
 
 - [x] Add a Content-Security-Policy header.
 - [x] Validate `HMAC_SECRET` presence and entropy at startup and fail closed in production.
-- [ ] Invalidate the session server-side on sign-out.
+- [x] Invalidate the session server-side on sign-out.
 - [ ] Raise scrypt parameters to current OWASP guidance.
 - [ ] Enforce a request body size limit.
 - [ ] Require POST with a CSRF token for sign-out.
