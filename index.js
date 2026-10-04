@@ -8,6 +8,7 @@ const { Eta } = require('eta');
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
+const isProduction = process.env.NODE_ENV === 'production';
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see you', 'Sign in to continue'];
 const users = new Map();
@@ -48,7 +49,7 @@ app.post('/signin', async (c) => {
   }
   setCookie(c, 'session', user.email, {
     httpOnly: true,
-    secure: true,
+    secure: isProduction,
     sameSite: 'Lax',
     path: '/',
     maxAge: 7 * 60 * 60
