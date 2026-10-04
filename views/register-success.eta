@@ -6,7 +6,6 @@
     <meta http-equiv="refresh" content="2; url=/" />
     <title>Account created</title>
     <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css" />
-    <script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
   </head>
   <body>
     <main>
