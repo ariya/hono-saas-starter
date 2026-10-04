@@ -44,7 +44,7 @@
 - [x] Validate `HMAC_SECRET` presence and entropy at startup and fail closed in production.
 - [x] Invalidate the session server-side on sign-out.
 - [x] Raise scrypt parameters to current OWASP guidance.
-- [ ] Enforce a request body size limit.
+- [x] Enforce a request body size limit.
 - [ ] Require POST with a CSRF token for sign-out.
 
 ### Low

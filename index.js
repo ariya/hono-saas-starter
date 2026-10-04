@@ -5,6 +5,7 @@ const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { getConnInfo } = require('@hono/node-server/conninfo');
 const { secureHeaders } = require('hono/secure-headers');
+const { bodyLimit } = require('hono/body-limit');
 const { setCookie, getCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
@@ -169,6 +170,7 @@ function renderRegister(c, status, error) {
   return c.html(eta.render('register', { csrfToken: createCsrfToken(c), error }), status);
 }
 
+app.use(bodyLimit({ maxSize: 16 * 1024 }));
 app.use(
   secureHeaders({
     contentSecurityPolicy: {
