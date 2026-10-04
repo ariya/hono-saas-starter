@@ -20,3 +20,36 @@
 - [x] Design the /profile skeleton, displaying the user's email in the top-left navigation bar.
 - [x] Add a "Sign Out" button in the top-right navigation bar targeting /signout.
 - [x] Implement the /signout handler to clear session cookies and redirect to the landing page.
+
+## Security Audit
+
+### Critical
+
+- [x] Upgrade `hono` and `@hono/node-server` to patched releases; the pinned versions are affected by high and moderate advisories, including `parseBody()` memory exhaustion.
+- [ ] Replace synchronous `scrypt` with asynchronous `scrypt` so password hashing cannot block the event loop and stall the whole server.
+- [ ] Add rate limiting to `/signin` and `/register` to prevent credential brute forcing and resource-exhaustion abuse.
+
+### High
+
+- [ ] Cap the in-memory user store to prevent memory-exhaustion denial of service.
+- [ ] Force the session cookie `Secure` attribute unless explicitly running in development.
+- [ ] Validate registration and sign-in input (email format and maximum lengths) on the server.
+- [ ] Remove account enumeration from the duplicate-email error and the sign-in timing difference.
+- [ ] Bind CSRF tokens to a session or double-submit cookie so they cannot be replayed across users.
+- [ ] Remove the unused third-party JavaScript from unpkg or add Subresource Integrity attributes.
+
+### Medium
+
+- [ ] Add a Content-Security-Policy header.
+- [ ] Validate `HMAC_SECRET` presence and entropy at startup and fail closed in production.
+- [ ] Invalidate the session server-side on sign-out.
+- [ ] Raise scrypt parameters to current OWASP guidance.
+- [ ] Enforce a request body size limit.
+- [ ] Require POST with a CSRF token for sign-out.
+
+### Low
+
+- [ ] Use the `__Host-` prefix for the session cookie.
+- [ ] Remove the timestamp from the public `/health` response.
+- [ ] Add a stronger password policy.
+- [ ] Document that in-memory state is not shared across instances.
