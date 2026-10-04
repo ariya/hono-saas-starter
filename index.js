@@ -18,6 +18,10 @@ const scrypt = promisify(crypto.scrypt);
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX = 10;
 const MAX_USERS = 10000;
+const EMAIL_MAX_LENGTH = 254;
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 200;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const rateLimitStore = new Map();
 
 setInterval(() => {
@@ -36,6 +40,14 @@ function pickWelcomeTitle() {
 
 function getUser(email) {
   return users.get(String(email).toLowerCase());
+}
+
+function normalizeEmail(value) {
+  const email = String(value || '')
+    .trim()
+    .toLowerCase();
+  if (!email || email.length > EMAIL_MAX_LENGTH || !EMAIL_PATTERN.test(email)) return null;
+  return email;
 }
 
 async function createUser(email, password) {
@@ -155,8 +167,15 @@ app.post('/signin', async (c) => {
   if (!verifyCsrfToken(body._csrf)) {
     return renderSignin(c, 403, 'Your form session expired. Please try again.');
   }
-  const user = getUser(body.email);
-  if (!user || !(await verifyPassword(user, body.password))) {
+  const email = String(body.email || '')
+    .trim()
+    .toLowerCase();
+  const password = String(body.password || '');
+  if (!email || email.length > EMAIL_MAX_LENGTH || password.length > PASSWORD_MAX_LENGTH) {
+    return renderSignin(c, 401, 'Invalid email or password.');
+  }
+  const user = getUser(email);
+  if (!user || !(await verifyPassword(user, password))) {
     return renderSignin(c, 401, 'Invalid email or password.');
   }
   setCookie(c, 'session', encodeSession(user.email), {
@@ -177,15 +196,16 @@ app.post('/register', async (c) => {
   if (!verifyCsrfToken(body._csrf)) {
     return renderRegister(c, 403, 'Your form session expired. Please try again.');
   }
-  const email = String(body.email || '')
-    .trim()
-    .toLowerCase();
+  const email = normalizeEmail(body.email);
   const password = String(body.password || '');
-  if (password.length < 8) {
-    return renderRegister(c, 400, 'Password must be at least 8 characters long.');
-  }
   if (!email) {
-    return renderRegister(c, 400, 'Email is required.');
+    return renderRegister(c, 400, 'Please enter a valid email address.');
+  }
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return renderRegister(c, 400, `Password must be at least ${PASSWORD_MIN_LENGTH} characters long.`);
+  }
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return renderRegister(c, 400, `Password must be at most ${PASSWORD_MAX_LENGTH} characters long.`);
   }
   if (getUser(email)) {
     return renderRegister(c, 400, 'An account with that email already exists.');
