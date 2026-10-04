@@ -26,6 +26,7 @@ const sessionSecret = resolveSessionSecret();
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const CSRF_COOKIE_MAX_AGE = 60 * 60;
 const scrypt = promisify(crypto.scrypt);
+const SCRYPT_OPTIONS = { N: 2 ** 17, r: 8, p: 1, maxmem: 160 * 1024 * 1024 };
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX = 10;
 const MAX_USERS = 10000;
@@ -72,7 +73,7 @@ function normalizeEmail(value) {
 
 async function createUser(email, password) {
   const salt = crypto.randomBytes(16).toString('hex');
-  const passwordHash = (await scrypt(String(password), salt, 64)).toString('hex');
+  const passwordHash = (await scrypt(String(password), salt, 64, SCRYPT_OPTIONS)).toString('hex');
   const user = { email: String(email).toLowerCase(), passwordHash, salt };
   users.set(user.email, user);
   return user;
@@ -80,7 +81,7 @@ async function createUser(email, password) {
 
 async function verifyPassword(user, password) {
   const expected = Buffer.from(user.passwordHash, 'hex');
-  const candidate = await scrypt(String(password), user.salt, 64);
+  const candidate = await scrypt(String(password), user.salt, 64, SCRYPT_OPTIONS);
   return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
 }
 
