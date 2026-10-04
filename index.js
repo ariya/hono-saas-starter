@@ -3,6 +3,7 @@ const { promisify } = require('node:util');
 const path = require('node:path');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
+const { getConnInfo } = require('@hono/node-server/conninfo');
 const { secureHeaders } = require('hono/secure-headers');
 const { setCookie, getCookie, deleteCookie } = require('hono/cookie');
 const { Eta } = require('eta');
@@ -13,6 +14,16 @@ const isProduction = process.env.NODE_ENV === 'production';
 const sessionSecret = process.env.HMAC_SECRET || crypto.randomBytes(32).toString('hex');
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const scrypt = promisify(crypto.scrypt);
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const RATE_LIMIT_MAX = 10;
+const rateLimitStore = new Map();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore) {
+    if (now > entry.resetAt) rateLimitStore.delete(key);
+  }
+}, RATE_LIMIT_WINDOW_MS).unref();
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see you', 'Sign in to continue'];
 const users = new Map();
@@ -92,6 +103,22 @@ function renderSignin(c, status, error) {
   return c.html(eta.render('signin', { title: pickWelcomeTitle(), csrfToken: createCsrfToken(), error }), status);
 }
 
+function isRateLimited(key) {
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > RATE_LIMIT_MAX;
+}
+
+function clientKey(c, scope) {
+  const info = getConnInfo(c);
+  return `${scope}:${info.remote.address || 'unknown'}`;
+}
+
 function renderRegister(c, status, error) {
   return c.html(eta.render('register', { csrfToken: createCsrfToken(), error }), status);
 }
@@ -120,6 +147,9 @@ app.get('/profile', (c) => {
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
+  if (isRateLimited(clientKey(c, 'signin'))) {
+    return renderSignin(c, 429, 'Too many sign-in attempts. Please try again later.');
+  }
   if (!verifyCsrfToken(body._csrf)) {
     return renderSignin(c, 403, 'Your form session expired. Please try again.');
   }
@@ -139,6 +169,9 @@ app.post('/signin', async (c) => {
 
 app.post('/register', async (c) => {
   const body = await c.req.parseBody();
+  if (isRateLimited(clientKey(c, 'register'))) {
+    return renderRegister(c, 429, 'Too many registration attempts. Please try again later.');
+  }
   if (!verifyCsrfToken(body._csrf)) {
     return renderRegister(c, 403, 'Your form session expired. Please try again.');
   }
