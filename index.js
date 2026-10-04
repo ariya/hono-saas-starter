@@ -9,6 +9,8 @@ const { Eta } = require('eta');
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 const isProduction = process.env.NODE_ENV === 'production';
+const sessionSecret = crypto.randomBytes(32).toString('hex');
+const SESSION_MAX_AGE = 7 * 60 * 60;
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see you', 'Sign in to continue'];
 const users = new Map();
@@ -35,6 +37,36 @@ function verifyPassword(user, password) {
   return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
 }
 
+function encodeSession(email) {
+  const payload = Buffer.from(JSON.stringify({ email, exp: Date.now() + SESSION_MAX_AGE * 1000 })).toString(
+    'base64url'
+  );
+  const signature = crypto.createHmac('sha256', sessionSecret).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function decodeSession(token) {
+  if (!token) return null;
+  const [payload, signature] = String(token).split('.');
+  if (!payload || !signature) return null;
+  const expected = crypto.createHmac('sha256', sessionSecret).update(payload).digest('base64url');
+  const signatureBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (signatureBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) {
+    return null;
+  }
+  let data;
+  try {
+    data = JSON.parse(Buffer.from(payload, 'base64url').toString());
+  } catch {
+    return null;
+  }
+  if (!data || typeof data.email !== 'string' || typeof data.exp !== 'number' || data.exp < Date.now()) {
+    return null;
+  }
+  return getUser(data.email) ? data.email : null;
+}
+
 app.use(secureHeaders());
 
 app.get('/', (c) => c.html(eta.render('signin', { title: pickWelcomeTitle() })));
@@ -47,12 +79,12 @@ app.post('/signin', async (c) => {
   if (!user || !verifyPassword(user, body.password)) {
     return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: 'Invalid email or password.' }), 401);
   }
-  setCookie(c, 'session', user.email, {
+  setCookie(c, 'session', encodeSession(user.email), {
     httpOnly: true,
     secure: isProduction,
     sameSite: 'Lax',
     path: '/',
-    maxAge: 7 * 60 * 60
+    maxAge: SESSION_MAX_AGE
   });
   return c.redirect('/profile');
 });
