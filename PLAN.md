@@ -32,7 +32,7 @@
 ### High
 
 - [x] Cap the in-memory user store to prevent memory-exhaustion denial of service.
-- [ ] Force the session cookie `Secure` attribute unless explicitly running in development.
+- [x] Force the session cookie `Secure` attribute unless explicitly running in development.
 - [ ] Validate registration and sign-in input (email format and maximum lengths) on the server.
 - [ ] Remove account enumeration from the duplicate-email error and the sign-in timing difference.
 - [ ] Bind CSRF tokens to a session or double-submit cookie so they cannot be replayed across users.

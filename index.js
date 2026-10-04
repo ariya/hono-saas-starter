@@ -10,6 +10,7 @@ const { Eta } = require('eta');
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
+const isDevelopment = process.env.NODE_ENV === 'development';
 const isProduction = process.env.NODE_ENV === 'production';
 const sessionSecret = process.env.HMAC_SECRET || crypto.randomBytes(32).toString('hex');
 const SESSION_MAX_AGE = 7 * 60 * 60;
@@ -160,7 +161,7 @@ app.post('/signin', async (c) => {
   }
   setCookie(c, 'session', encodeSession(user.email), {
     httpOnly: true,
-    secure: isProduction,
+    secure: !isDevelopment,
     sameSite: 'Lax',
     path: '/',
     maxAge: SESSION_MAX_AGE
