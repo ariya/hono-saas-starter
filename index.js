@@ -33,6 +33,11 @@ setInterval(() => {
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see you', 'Sign in to continue'];
 const users = new Map();
+const dummyUser = {
+  email: '',
+  salt: crypto.randomBytes(16).toString('hex'),
+  passwordHash: crypto.randomBytes(64).toString('hex')
+};
 
 function pickWelcomeTitle() {
   return welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
@@ -175,7 +180,8 @@ app.post('/signin', async (c) => {
     return renderSignin(c, 401, 'Invalid email or password.');
   }
   const user = getUser(email);
-  if (!user || !(await verifyPassword(user, password))) {
+  const valid = await verifyPassword(user || dummyUser, password);
+  if (!user || !valid) {
     return renderSignin(c, 401, 'Invalid email or password.');
   }
   setCookie(c, 'session', encodeSession(user.email), {
@@ -208,7 +214,8 @@ app.post('/register', async (c) => {
     return renderRegister(c, 400, `Password must be at most ${PASSWORD_MAX_LENGTH} characters long.`);
   }
   if (getUser(email)) {
-    return renderRegister(c, 400, 'An account with that email already exists.');
+    await verifyPassword(dummyUser, password);
+    return c.html(eta.render('register-success', {}));
   }
   if (users.size >= MAX_USERS) {
     return renderRegister(c, 503, 'Registration is temporarily unavailable. Please try again later.');
