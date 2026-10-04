@@ -3,6 +3,7 @@ const path = require('node:path');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
+const { setCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const app = new Hono();
@@ -45,7 +46,8 @@ app.post('/signin', async (c) => {
   if (!user || !verifyPassword(user, body.password)) {
     return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: 'Invalid email or password.' }), 401);
   }
-  return c.text('Signed in');
+  setCookie(c, 'session', user.email, { httpOnly: true, path: '/', sameSite: 'Lax' });
+  return c.redirect('/profile');
 });
 
 const port = process.env.PORT || 3000;
