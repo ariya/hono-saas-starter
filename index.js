@@ -23,6 +23,12 @@ function createUser(email, password) {
   return user;
 }
 
+function verifyPassword(user, password) {
+  const expected = Buffer.from(user.passwordHash, 'hex');
+  const candidate = crypto.scryptSync(String(password), user.salt, 64);
+  return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
+}
+
 app.use(secureHeaders());
 
 app.get('/', (c) => {
@@ -31,6 +37,15 @@ app.get('/', (c) => {
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
+
+app.post('/signin', async (c) => {
+  const body = await c.req.parseBody();
+  const user = getUser(body.email);
+  if (!user || !verifyPassword(user, body.password)) {
+    return c.text('Invalid credentials', 401);
+  }
+  return c.text('Signed in');
+});
 
 const port = process.env.PORT || 3000;
 serve({ fetch: app.fetch, port });
