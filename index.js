@@ -16,6 +16,7 @@ const SESSION_MAX_AGE = 7 * 60 * 60;
 const scrypt = promisify(crypto.scrypt);
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX = 10;
+const MAX_USERS = 10000;
 const rateLimitStore = new Map();
 
 setInterval(() => {
@@ -187,6 +188,9 @@ app.post('/register', async (c) => {
   }
   if (getUser(email)) {
     return renderRegister(c, 400, 'An account with that email already exists.');
+  }
+  if (users.size >= MAX_USERS) {
+    return renderRegister(c, 503, 'Registration is temporarily unavailable. Please try again later.');
   }
   await createUser(email, password);
   return c.html(eta.render('register-success', {}));
