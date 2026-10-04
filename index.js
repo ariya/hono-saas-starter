@@ -147,7 +147,22 @@ function renderRegister(c, status, error) {
   return c.html(eta.render('register', { csrfToken: createCsrfToken(c), error }), status);
 }
 
-app.use(secureHeaders());
+app.use(
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", 'https://unpkg.com'],
+      fontSrc: ["'self'", 'https://unpkg.com', 'data:'],
+      imgSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"]
+    }
+  })
+);
 
 app.get('/', (c) => {
   if (decodeSession(getCookie(c, 'session'))) return c.redirect('/profile');
