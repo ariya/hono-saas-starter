@@ -90,6 +90,10 @@ function renderSignin(c, status, error) {
   return c.html(eta.render('signin', { title: pickWelcomeTitle(), csrfToken: createCsrfToken(), error }), status);
 }
 
+function renderRegister(c, status, error) {
+  return c.html(eta.render('register', { csrfToken: createCsrfToken(), error }), status);
+}
+
 app.use(secureHeaders());
 
 app.get('/', (c) => {
@@ -98,6 +102,8 @@ app.get('/', (c) => {
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
+
+app.get('/register', (c) => renderRegister(c, 200));
 
 app.get('/profile', (c) => {
   const email = decodeSession(getCookie(c, 'session'));
