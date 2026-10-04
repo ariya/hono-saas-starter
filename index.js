@@ -46,7 +46,13 @@ app.post('/signin', async (c) => {
   if (!user || !verifyPassword(user, body.password)) {
     return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: 'Invalid email or password.' }), 401);
   }
-  setCookie(c, 'session', user.email, { httpOnly: true, path: '/', sameSite: 'Lax' });
+  setCookie(c, 'session', user.email, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: 7 * 60 * 60
+  });
   return c.redirect('/profile');
 });
 
