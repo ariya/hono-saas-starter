@@ -130,6 +130,18 @@ app.post('/signin', async (c) => {
   return c.redirect('/profile');
 });
 
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(body._csrf)) {
+    return renderRegister(c, 403, 'Your form session expired. Please try again.');
+  }
+  const password = String(body.password || '');
+  if (password.length < 8) {
+    return renderRegister(c, 400, 'Password must be at least 8 characters long.');
+  }
+  return c.text('OK');
+});
+
 const port = process.env.PORT || 3000;
 serve({ fetch: app.fetch, port });
 console.log('Listening on port', port);
