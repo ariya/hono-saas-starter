@@ -9,8 +9,9 @@
   </head>
   <body>
     <header>
-      <nav>
+      <nav class="flex justify-between items-center">
         <span><%= it.email %></span>
+        <a href="/signout" class="button outline">Sign Out</a>
       </nav>
     </header>
     <main>
