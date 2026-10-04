@@ -26,7 +26,7 @@
 ### Critical
 
 - [x] Upgrade `hono` and `@hono/node-server` to patched releases; the pinned versions are affected by high and moderate advisories, including `parseBody()` memory exhaustion.
-- [ ] Replace synchronous `scrypt` with asynchronous `scrypt` so password hashing cannot block the event loop and stall the whole server.
+- [x] Replace synchronous `scrypt` with asynchronous `scrypt` so password hashing cannot block the event loop and stall the whole server.
 - [ ] Add rate limiting to `/signin` and `/register` to prevent credential brute forcing and resource-exhaustion abuse.
 
 ### High
