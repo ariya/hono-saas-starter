@@ -14,6 +14,7 @@
       <p role="alert"><%= it.error %></p>
       <% } %>
       <form method="post" action="/signin">
+        <input type="hidden" name="_csrf" value="<%= it.csrfToken %>" />
         <label>
           Email
           <input type="email" name="email" autocomplete="email" required />

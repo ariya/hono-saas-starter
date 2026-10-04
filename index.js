@@ -67,17 +67,43 @@ function decodeSession(token) {
   return getUser(data.email) ? data.email : null;
 }
 
+function createCsrfToken() {
+  const expiry = String(Date.now() + 60 * 60 * 1000);
+  const signature = crypto.createHmac('sha256', sessionSecret).update(expiry).digest('base64url');
+  return `${expiry}.${signature}`;
+}
+
+function verifyCsrfToken(token) {
+  if (!token) return false;
+  const [expiry, signature] = String(token).split('.');
+  if (!expiry || !signature) return false;
+  const expected = crypto.createHmac('sha256', sessionSecret).update(expiry).digest('base64url');
+  const signatureBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (signatureBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) {
+    return false;
+  }
+  return Number(expiry) > Date.now();
+}
+
+function renderSignin(c, status, error) {
+  return c.html(eta.render('signin', { title: pickWelcomeTitle(), csrfToken: createCsrfToken(), error }), status);
+}
+
 app.use(secureHeaders());
 
-app.get('/', (c) => c.html(eta.render('signin', { title: pickWelcomeTitle() })));
+app.get('/', (c) => renderSignin(c, 200));
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
+  if (!verifyCsrfToken(body._csrf)) {
+    return renderSignin(c, 403, 'Your form session expired. Please try again.');
+  }
   const user = getUser(body.email);
   if (!user || !verifyPassword(user, body.password)) {
-    return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: 'Invalid email or password.' }), 401);
+    return renderSignin(c, 401, 'Invalid email or password.');
   }
   setCookie(c, 'session', encodeSession(user.email), {
     httpOnly: true,
