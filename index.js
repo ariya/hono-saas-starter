@@ -92,7 +92,10 @@ function renderSignin(c, status, error) {
 
 app.use(secureHeaders());
 
-app.get('/', (c) => renderSignin(c, 200));
+app.get('/', (c) => {
+  if (decodeSession(getCookie(c, 'session'))) return c.redirect('/profile');
+  return renderSignin(c, 200);
+});
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
