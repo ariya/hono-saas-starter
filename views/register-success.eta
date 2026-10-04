@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="refresh" content="2; url=/" />
+    <title>Account created</title>
+    <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css" />
+    <script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <h1>Account created</h1>
+      <p role="status">Your account was created successfully. Redirecting you to sign in.</p>
+      <p><a href="/">Continue to sign in</a></p>
+    </main>
+  </body>
+</html>

@@ -135,11 +135,21 @@ app.post('/register', async (c) => {
   if (!verifyCsrfToken(body._csrf)) {
     return renderRegister(c, 403, 'Your form session expired. Please try again.');
   }
+  const email = String(body.email || '')
+    .trim()
+    .toLowerCase();
   const password = String(body.password || '');
   if (password.length < 8) {
     return renderRegister(c, 400, 'Password must be at least 8 characters long.');
   }
-  return c.text('OK');
+  if (!email) {
+    return renderRegister(c, 400, 'Email is required.');
+  }
+  if (getUser(email)) {
+    return renderRegister(c, 400, 'An account with that email already exists.');
+  }
+  createUser(email, password);
+  return c.html(eta.render('register-success', {}));
 });
 
 const port = process.env.PORT || 3000;
