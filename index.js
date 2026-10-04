@@ -11,6 +11,10 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see you', 'Sign in to continue'];
 const users = new Map();
 
+function pickWelcomeTitle() {
+  return welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
+}
+
 function getUser(email) {
   return users.get(String(email).toLowerCase());
 }
@@ -31,10 +35,7 @@ function verifyPassword(user, password) {
 
 app.use(secureHeaders());
 
-app.get('/', (c) => {
-  const title = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
-  return c.html(eta.render('signin', { title }));
-});
+app.get('/', (c) => c.html(eta.render('signin', { title: pickWelcomeTitle() })));
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
@@ -42,7 +43,7 @@ app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
   const user = getUser(body.email);
   if (!user || !verifyPassword(user, body.password)) {
-    return c.text('Invalid credentials', 401);
+    return c.html(eta.render('signin', { title: pickWelcomeTitle(), error: 'Invalid email or password.' }), 401);
   }
   return c.text('Signed in');
 });
