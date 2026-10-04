@@ -3,7 +3,7 @@ const path = require('node:path');
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
-const { setCookie } = require('hono/cookie');
+const { setCookie, getCookie } = require('hono/cookie');
 const { Eta } = require('eta');
 
 const app = new Hono();
@@ -95,6 +95,12 @@ app.use(secureHeaders());
 app.get('/', (c) => renderSignin(c, 200));
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
+
+app.get('/profile', (c) => {
+  const email = decodeSession(getCookie(c, 'session'));
+  if (!email) return c.redirect('/');
+  return c.html(eta.render('profile', { email }));
+});
 
 app.post('/signin', async (c) => {
   const body = await c.req.parseBody();
