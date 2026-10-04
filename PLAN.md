@@ -41,7 +41,7 @@
 ### Medium
 
 - [x] Add a Content-Security-Policy header.
-- [ ] Validate `HMAC_SECRET` presence and entropy at startup and fail closed in production.
+- [x] Validate `HMAC_SECRET` presence and entropy at startup and fail closed in production.
 - [ ] Invalidate the session server-side on sign-out.
 - [ ] Raise scrypt parameters to current OWASP guidance.
 - [ ] Enforce a request body size limit.

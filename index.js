@@ -12,7 +12,17 @@ const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isProduction = process.env.NODE_ENV === 'production';
-const sessionSecret = process.env.HMAC_SECRET || crypto.randomBytes(32).toString('hex');
+
+function resolveSessionSecret() {
+  const secret = process.env.HMAC_SECRET;
+  if (secret && secret.length >= 32) return secret;
+  if (isProduction) {
+    throw new Error('HMAC_SECRET must be set to a value of at least 32 characters in production');
+  }
+  return crypto.randomBytes(32).toString('hex');
+}
+
+const sessionSecret = resolveSessionSecret();
 const SESSION_MAX_AGE = 7 * 60 * 60;
 const CSRF_COOKIE_MAX_AGE = 60 * 60;
 const scrypt = promisify(crypto.scrypt);
