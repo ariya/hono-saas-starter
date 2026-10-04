@@ -6,7 +6,33 @@ const app = new Hono();
 
 app.use(secureHeaders());
 
-app.get('/', (c) => c.text('Hello from Hono!'));
+app.get('/', (c) =>
+  c.html(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sign In</title>
+    <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css" />
+    <script src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <h1>Welcome</h1>
+      <form method="post" action="/signin">
+        <label>
+          Email
+          <input type="email" name="email" autocomplete="email" required />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" autocomplete="current-password" required />
+        </label>
+        <button type="submit">Sign In</button>
+      </form>
+    </main>
+  </body>
+</html>`)
+);
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
