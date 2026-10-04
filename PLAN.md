@@ -45,7 +45,7 @@
 - [x] Invalidate the session server-side on sign-out.
 - [x] Raise scrypt parameters to current OWASP guidance.
 - [x] Enforce a request body size limit.
-- [ ] Require POST with a CSRF token for sign-out.
+- [x] Require POST with a CSRF token for sign-out.
 
 ### Low
 

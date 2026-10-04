@@ -170,6 +170,10 @@ function renderRegister(c, status, error) {
   return c.html(eta.render('register', { csrfToken: createCsrfToken(c), error }), status);
 }
 
+function renderProfile(c, email, status) {
+  return c.html(eta.render('profile', { email, csrfToken: createCsrfToken(c) }), status);
+}
+
 app.use(bodyLimit({ maxSize: 16 * 1024 }));
 app.use(
   secureHeaders({
@@ -197,9 +201,14 @@ app.get('/health', (c) => c.text(`OK ${Date.now()}`));
 
 app.get('/register', (c) => renderRegister(c, 200));
 
-app.get('/signout', (c) => {
+app.post('/signout', async (c) => {
   const session = decodeSession(getCookie(c, 'session'));
-  if (session) revokedSessions.set(session.jti, session.exp);
+  if (!session) return c.redirect('/');
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(c, body._csrf)) {
+    return renderProfile(c, session.email, 403);
+  }
+  revokedSessions.set(session.jti, session.exp);
   deleteCookie(c, 'session', { path: '/' });
   return c.redirect('/');
 });
@@ -207,7 +216,7 @@ app.get('/signout', (c) => {
 app.get('/profile', (c) => {
   const session = decodeSession(getCookie(c, 'session'));
   if (!session) return c.redirect('/');
-  return c.html(eta.render('profile', { email: session.email }));
+  return renderProfile(c, session.email, 200);
 });
 
 app.post('/signin', async (c) => {

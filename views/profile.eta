@@ -10,7 +10,10 @@
     <header>
       <nav class="flex justify-between items-center">
         <span><%= it.email %></span>
-        <a href="/signout" class="button outline">Sign Out</a>
+        <form method="post" action="/signout">
+          <input type="hidden" name="_csrf" value="<%= it.csrfToken %>" />
+          <button type="submit" class="button outline">Sign Out</button>
+        </form>
       </nav>
     </header>
     <main>
