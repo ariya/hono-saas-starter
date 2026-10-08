@@ -11,6 +11,7 @@ const scryptAsync = promisify(scrypt);
 
 const SESSION_COOKIE = 'session';
 const SESSION_TTL = 7 * 60 * 60;
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
@@ -65,7 +66,7 @@ app.post('/', async (c) => {
   }
   setCookie(c, SESSION_COOKIE, createSession(user.email), {
     httpOnly: true,
-    secure: true,
+    secure: !isDevelopment,
     sameSite: 'Lax',
     path: '/',
     maxAge: SESSION_TTL
