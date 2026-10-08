@@ -111,6 +111,11 @@ app.get('/', (c) => {
   return renderSignin(c);
 });
 
+const renderRegister = (c, status = 200, data = {}) =>
+  c.html(eta.render('register', { title: 'Register', email: '', error: '', csrf: createCsrfToken(), ...data }), status);
+
+app.get('/register', (c) => renderRegister(c));
+
 app.get('/profile', (c) => {
   const session = verifySession(getCookie(c, SESSION_COOKIE));
   if (!session) {
