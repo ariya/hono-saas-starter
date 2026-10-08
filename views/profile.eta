@@ -1,5 +1,8 @@
 <% layout('./layout', { title: it.title }) %>
 <nav style="display: flex; align-items: center;">
   <strong><%= it.email %></strong>
+  <form method="post" action="/signout" style="margin-left: auto;">
+    <button type="submit">Sign Out</button>
+  </form>
 </nav>
 <h1>Profile</h1>
