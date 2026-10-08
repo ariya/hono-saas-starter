@@ -12,6 +12,8 @@ const scryptAsync = promisify(scrypt);
 const SESSION_COOKIE = 'session';
 const SESSION_TTL = 7 * 60 * 60;
 const CSRF_TTL = 2 * 60 * 60;
+const MIN_PASSWORD_LENGTH = 8;
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isDevelopment = process.env.NODE_ENV === 'development';
 const hmacSecret = process.env.HMAC_SECRET;
 
@@ -115,6 +117,31 @@ const renderRegister = (c, status = 200, data = {}) =>
   c.html(eta.render('register', { title: 'Register', email: '', error: '', csrf: createCsrfToken(), ...data }), status);
 
 app.get('/register', (c) => renderRegister(c));
+
+app.post('/register', async (c) => {
+  const body = await c.req.parseBody();
+  if (!verifyCsrfToken(formField(body, 'csrf'))) {
+    return renderRegister(c, 403, { error: 'Your form has expired. Please try again.' });
+  }
+  const email = formField(body, 'email').trim().toLowerCase();
+  const password = formField(body, 'password');
+  if (!emailPattern.test(email)) {
+    return renderRegister(c, 400, { email, error: 'Please enter a valid email address.' });
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return renderRegister(c, 400, { email, error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` });
+  }
+  const salt = randomBytes(16).toString('hex');
+  const passwordHash = await hashPassword(password, salt);
+  if (users.has(email)) {
+    return renderRegister(c, 409, { email, error: 'An account with this email already exists.' });
+  }
+  users.set(email, { email, salt, passwordHash });
+  return renderRegister(c, 201, {
+    success: 'Account created. Redirecting you to sign in...',
+    refresh: '3;url=/'
+  });
+});
 
 app.get('/profile', (c) => {
   const session = verifySession(getCookie(c, SESSION_COOKIE));

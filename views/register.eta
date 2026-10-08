@@ -1,5 +1,9 @@
-<% layout('./layout', { title: it.title }) %>
+<% layout('./layout', { title: it.title, refresh: it.refresh }) %>
 <h1>Create an account</h1>
+<% if (it.success) { %>
+<p role="status"><strong><%= it.success %></strong></p>
+<p><a href="/">Continue to sign in</a></p>
+<% } else { %>
 <% if (it.error) { %>
 <p role="alert"><strong><%= it.error %></strong></p>
 <% } %>
@@ -10,3 +14,4 @@
   <button type="submit">Register</button>
 </form>
 <p><a href="/">Back to sign in</a></p>
+<% } %>
