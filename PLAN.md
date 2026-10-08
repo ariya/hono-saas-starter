@@ -29,7 +29,7 @@
 
 ### High
 
-- [ ] Add per-IP rate limiting to sign-in and registration to stop credential guessing, account spam, and scrypt thread-pool exhaustion.
+- [x] Add per-IP rate limiting to sign-in and registration to stop credential guessing, account spam, and scrypt thread-pool exhaustion.
 - [ ] Bind the CSRF token to the browser (double-submit cookie); any valid token currently works for any visitor, so login CSRF is open.
 - [ ] Make sign-out effective server-side: it only clears the cookie, so a copied session stays valid for up to 7 hours. Add a per-user session version that sign-out increments.
 - [x] Require `HMAC_SECRET` to be at least 32 characters at startup; a short secret makes session forgery feasible.

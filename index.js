@@ -17,6 +17,7 @@ const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
 const MAX_EMAIL_LENGTH = 254;
 const MAX_BODY_SIZE = 4 * 1024;
+const MAX_TRACKED_CLIENTS = 10000;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isDevelopment = process.env.NODE_ENV === 'development';
 const hmacSecret = process.env.HMAC_SECRET;
@@ -106,6 +107,34 @@ const authenticate = async (email, password) => {
 
 const formField = (body, name) => (typeof body[name] === 'string' ? body[name] : '');
 
+const createRateLimiter = (limit, windowMs) => {
+  const hits = new Map();
+  return async (c, next) => {
+    const now = Date.now();
+    if (hits.size > MAX_TRACKED_CLIENTS) {
+      for (const [key, entry] of hits) {
+        if (entry.resetAt <= now) {
+          hits.delete(key);
+        }
+      }
+    }
+    const key = c.env?.incoming?.socket?.remoteAddress ?? 'unknown';
+    let entry = hits.get(key);
+    if (!entry || entry.resetAt <= now) {
+      entry = { count: 0, resetAt: now + windowMs };
+      hits.set(key, entry);
+    }
+    entry.count += 1;
+    if (entry.count > limit) {
+      c.header('Retry-After', String(Math.ceil((entry.resetAt - now) / 1000)));
+      return c.text('Too many attempts. Please try again later.', 429);
+    }
+    await next();
+  };
+};
+
+const authRateLimit = createRateLimiter(10, 15 * 60 * 1000);
+
 const renderSignin = (c, status = 200, data = {}) => {
   const welcome = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
   return c.html(
@@ -126,7 +155,7 @@ const renderRegister = (c, status = 200, data = {}) =>
 
 app.get('/register', (c) => renderRegister(c));
 
-app.post('/register', async (c) => {
+app.post('/register', authRateLimit, async (c) => {
   const body = await c.req.parseBody();
   if (!verifyCsrfToken(formField(body, 'csrf'))) {
     return renderRegister(c, 403, { error: 'Your form has expired. Please try again.' });
@@ -162,7 +191,7 @@ app.get('/profile', (c) => {
   return c.html(eta.render('profile', { title: 'Profile', email: session.sub }));
 });
 
-app.post('/', async (c) => {
+app.post('/', authRateLimit, async (c) => {
   const body = await c.req.parseBody();
   if (!verifyCsrfToken(formField(body, 'csrf'))) {
     return renderSignin(c, 403, { error: 'Your form has expired. Please try again.' });
