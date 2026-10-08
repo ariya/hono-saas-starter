@@ -40,9 +40,9 @@ const hashPassword = async (password, salt) => (await scryptAsync(password, salt
 
 const sign = (value) => createHmac('sha256', hmacSecret).update(value).digest('base64url');
 
-const createSession = (email) => {
+const createSession = (user) => {
   const payload = Buffer.from(
-    JSON.stringify({ sub: email, exp: Math.floor(Date.now() / 1000) + SESSION_TTL })
+    JSON.stringify({ sub: user.email, ver: user.sessionVersion, exp: Math.floor(Date.now() / 1000) + SESSION_TTL })
   ).toString('base64url');
   return `${payload}.${sign(`session.${payload}`)}`;
 };
@@ -62,7 +62,8 @@ const verifySession = (token) => {
     return null;
   }
   const session = JSON.parse(Buffer.from(payload, 'base64url').toString());
-  if (session.exp <= Math.floor(Date.now() / 1000) || !users.has(session.sub)) {
+  const user = users.get(session.sub);
+  if (session.exp <= Math.floor(Date.now() / 1000) || !user || session.ver !== user.sessionVersion) {
     return null;
   }
   return session;
@@ -197,7 +198,7 @@ app.post('/register', authRateLimit, async (c) => {
   if (users.has(email)) {
     return renderRegister(c, 409, { email, error: 'An account with this email already exists.' });
   }
-  users.set(email, { email, salt, passwordHash });
+  users.set(email, { email, salt, passwordHash, sessionVersion: 0 });
   return renderRegister(c, 201, {
     success: 'Account created. Redirecting you to sign in...',
     refresh: '3;url=/'
@@ -223,7 +224,7 @@ app.post('/', authRateLimit, async (c) => {
   if (!user) {
     return renderSignin(c, 401, { email, error: 'Invalid email or password.' });
   }
-  setCookie(c, SESSION_COOKIE, createSession(user.email), {
+  setCookie(c, SESSION_COOKIE, createSession(user), {
     httpOnly: true,
     secure: !isDevelopment,
     sameSite: 'Lax',
@@ -234,6 +235,10 @@ app.post('/', authRateLimit, async (c) => {
 });
 
 app.post('/signout', (c) => {
+  const session = verifySession(getCookie(c, SESSION_COOKIE));
+  if (session) {
+    users.get(session.sub).sessionVersion += 1;
+  }
   deleteCookie(c, SESSION_COOKIE, { path: '/', secure: !isDevelopment });
   return c.redirect('/');
 });
