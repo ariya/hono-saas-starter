@@ -218,15 +218,14 @@ app.post('/register', authRateLimit, async (c) => {
   }
   const salt = randomBytes(16).toString('hex');
   const passwordHash = await hashPassword(password, salt);
-  if (users.has(email)) {
-    return renderRegister(c, 409, { email, error: 'An account with this email already exists.' });
-  }
   if (users.size >= MAX_USERS) {
     return renderRegister(c, 503, { email, error: 'Registration is temporarily unavailable. Please try again later.' });
   }
-  users.set(email, { email, salt, passwordHash, sessionVersion: 0 });
+  if (!users.has(email)) {
+    users.set(email, { email, salt, passwordHash, sessionVersion: 0 });
+  }
   return renderRegister(c, 201, {
-    success: 'Account created. Redirecting you to sign in...',
+    success: 'If this email is not already registered, your account has been created. Redirecting you to sign in...',
     refresh: '3;url=/'
   });
 });
