@@ -2,7 +2,7 @@ const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
-const { createHmac, scrypt, timingSafeEqual } = require('node:crypto');
+const { createHmac, randomBytes, scrypt, timingSafeEqual } = require('node:crypto');
 const { promisify } = require('node:util');
 const path = require('node:path');
 const { setCookie } = require('hono/cookie');
@@ -11,6 +11,7 @@ const scryptAsync = promisify(scrypt);
 
 const SESSION_COOKIE = 'session';
 const SESSION_TTL = 7 * 60 * 60;
+const CSRF_TTL = 2 * 60 * 60;
 const isDevelopment = process.env.NODE_ENV === 'development';
 const hmacSecret = process.env.HMAC_SECRET;
 
@@ -28,13 +29,33 @@ const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see yo
 
 const hashPassword = async (password, salt) => (await scryptAsync(password, salt, 64)).toString('hex');
 
-const signSession = (payload) => createHmac('sha256', hmacSecret).update(payload).digest('base64url');
+const sign = (value) => createHmac('sha256', hmacSecret).update(value).digest('base64url');
 
 const createSession = (email) => {
   const payload = Buffer.from(
     JSON.stringify({ sub: email, exp: Math.floor(Date.now() / 1000) + SESSION_TTL })
   ).toString('base64url');
-  return `${payload}.${signSession(payload)}`;
+  return `${payload}.${sign(`session.${payload}`)}`;
+};
+
+const createCsrfToken = () => {
+  const data = `${Math.floor(Date.now() / 1000)}.${randomBytes(16).toString('base64url')}`;
+  return `${data}.${sign(`csrf.${data}`)}`;
+};
+
+const verifyCsrfToken = (token) => {
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    return false;
+  }
+  const [issuedAt, nonce, signature] = parts;
+  const expected = Buffer.from(sign(`csrf.${issuedAt}.${nonce}`));
+  const actual = Buffer.from(signature);
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+    return false;
+  }
+  const age = Math.floor(Date.now() / 1000) - Number(issuedAt);
+  return age >= 0 && age <= CSRF_TTL;
 };
 
 const verifyPassword = async (password, user) => {
@@ -56,13 +77,19 @@ const formField = (body, name) => (typeof body[name] === 'string' ? body[name] :
 
 const renderSignin = (c, status = 200, data = {}) => {
   const welcome = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
-  return c.html(eta.render('signin', { title: 'Sign In', welcome, email: '', error: '', ...data }), status);
+  return c.html(
+    eta.render('signin', { title: 'Sign In', welcome, email: '', error: '', csrf: createCsrfToken(), ...data }),
+    status
+  );
 };
 
 app.get('/', (c) => renderSignin(c));
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
+  if (!verifyCsrfToken(formField(body, 'csrf'))) {
+    return renderSignin(c, 403, { error: 'Your form has expired. Please try again.' });
+  }
   const email = formField(body, 'email').trim().toLowerCase();
   const password = formField(body, 'password');
   const user = await authenticate(email, password);
