@@ -2,7 +2,11 @@ const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
+const { scrypt, timingSafeEqual } = require('node:crypto');
+const { promisify } = require('node:util');
 const path = require('node:path');
+
+const scryptAsync = promisify(scrypt);
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
@@ -12,9 +16,41 @@ app.use(secureHeaders());
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see you', 'Nice to have you here'];
 
-app.get('/', (c) => {
+const hashPassword = async (password, salt) => (await scryptAsync(password, salt, 64)).toString('hex');
+
+const verifyPassword = async (password, user) => {
+  const actual = Buffer.from(await hashPassword(password, user.salt), 'hex');
+  const expected = Buffer.from(user.passwordHash, 'hex');
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
+};
+
+const authenticate = async (email, password) => {
+  const user = users.get(email);
+  if (!user) {
+    await hashPassword(password, 'timing-equalizer');
+    return null;
+  }
+  return (await verifyPassword(password, user)) ? user : null;
+};
+
+const formField = (body, name) => (typeof body[name] === 'string' ? body[name] : '');
+
+const renderSignin = (c, status = 200, data = {}) => {
   const welcome = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
-  return c.html(eta.render('signin', { title: 'Sign In', welcome }));
+  return c.html(eta.render('signin', { title: 'Sign In', welcome, email: '', error: '', ...data }), status);
+};
+
+app.get('/', (c) => renderSignin(c));
+
+app.post('/', async (c) => {
+  const body = await c.req.parseBody();
+  const email = formField(body, 'email').trim().toLowerCase();
+  const password = formField(body, 'password');
+  const user = await authenticate(email, password);
+  if (!user) {
+    return renderSignin(c, 401, { email, error: 'Invalid email or password.' });
+  }
+  return c.redirect('/profile');
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));

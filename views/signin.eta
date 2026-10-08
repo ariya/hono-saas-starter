@@ -1,7 +1,10 @@
 <% layout('./layout', { title: it.title }) %>
 <h1><%= it.welcome %></h1>
+<% if (it.error) { %>
+<p role="alert"><strong><%= it.error %></strong></p>
+<% } %>
 <form method="post" action="/">
-  <label>Email <input type="email" name="email" required /></label>
+  <label>Email <input type="email" name="email" value="<%= it.email %>" required /></label>
   <label>Password <input type="password" name="password" required /></label>
   <button type="submit">Sign in</button>
 </form>
