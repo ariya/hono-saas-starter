@@ -2,11 +2,15 @@ const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { secureHeaders } = require('hono/secure-headers');
 const { Eta } = require('eta');
-const { scrypt, timingSafeEqual } = require('node:crypto');
+const { createHmac, scrypt, timingSafeEqual } = require('node:crypto');
 const { promisify } = require('node:util');
 const path = require('node:path');
+const { setCookie } = require('hono/cookie');
 
 const scryptAsync = promisify(scrypt);
+
+const SESSION_COOKIE = 'session';
+const SESSION_TTL = 7 * 60 * 60;
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
@@ -17,6 +21,15 @@ app.use(secureHeaders());
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see you', 'Nice to have you here'];
 
 const hashPassword = async (password, salt) => (await scryptAsync(password, salt, 64)).toString('hex');
+
+const signSession = (payload) => createHmac('sha256', process.env.HMAC_SECRET).update(payload).digest('base64url');
+
+const createSession = (email) => {
+  const payload = Buffer.from(
+    JSON.stringify({ sub: email, exp: Math.floor(Date.now() / 1000) + SESSION_TTL })
+  ).toString('base64url');
+  return `${payload}.${signSession(payload)}`;
+};
 
 const verifyPassword = async (password, user) => {
   const actual = Buffer.from(await hashPassword(password, user.salt), 'hex');
@@ -50,6 +63,12 @@ app.post('/', async (c) => {
   if (!user) {
     return renderSignin(c, 401, { email, error: 'Invalid email or password.' });
   }
+  setCookie(c, SESSION_COOKIE, createSession(user.email), {
+    httpOnly: true,
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: SESSION_TTL
+  });
   return c.redirect('/profile');
 });
 

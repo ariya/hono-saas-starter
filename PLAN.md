@@ -5,10 +5,10 @@
 - [x] Initialize an in-memory User store (supporting email, password hash, and salt).
 - [x] Create a POST handler for sign-in to validate credentials against the User store.
 - [x] Implement error handling: Re-render the sign-in page with a clear error message on failure.
-- [ ] Implement success logic: Set a session cookie and redirect authenticated users to /profile.
+- [x] Implement success logic: Set a session cookie and redirect authenticated users to /profile.
 - [ ] Configure session cookies with the Secure flag and a 7-hour expiration.
 - [ ] Implement conditional logic to disable the Secure flag during local development.
-- [ ] Use scrypt for password hashing and HMAC for session cookie validation.
+- [x] Use scrypt for password hashing and HMAC for session cookie validation.
 - [ ] Secure the HMAC secret, retrieve from the `HMAC_SECRET` env.
 - [ ] Implement CSRF protection using an HMAC-signed token, passed via a hidden input field.
 - [ ] Build the /profile route with session validation; redirect unauthenticated users to /.
