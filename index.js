@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
+const users = new Map();
 
 app.use(secureHeaders());
 
