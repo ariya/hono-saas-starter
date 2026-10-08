@@ -37,7 +37,7 @@
 ### Medium
 
 - [x] Send a Content-Security-Policy header limiting scripts and styles to `self` and the Oat.ink CDN (inline `style` attributes must move to CSS first).
-- [ ] Send `Cache-Control: no-store` on authenticated pages and on pages carrying CSRF tokens.
+- [x] Send `Cache-Control: no-store` on authenticated pages and on pages carrying CSRF tokens.
 - [ ] Raise scrypt cost to N=2^17, r=8, p=1 (OWASP recommendation); the current defaults are N=2^14.
 - [ ] Cap the in-memory user store so unauthenticated registration cannot grow memory without bound.
 - [ ] Registration reveals whether an email is taken ("An account with this email already exists."), enabling account enumeration.

@@ -46,6 +46,12 @@ app.use(
   })
 );
 app.use('/app.css', serveStatic({ root: './public' }));
+app.use(async (c, next) => {
+  await next();
+  if (c.res.headers.get('content-type')?.startsWith('text/html')) {
+    c.header('Cache-Control', 'no-store');
+  }
+});
 app.use(bodyLimit({ maxSize: MAX_BODY_SIZE, onError: (c) => c.text('Payload too large', 413) }));
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see you', 'Nice to have you here'];
