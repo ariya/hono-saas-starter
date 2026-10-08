@@ -20,6 +20,7 @@ const MAX_PASSWORD_LENGTH = 128;
 const MAX_EMAIL_LENGTH = 254;
 const MAX_BODY_SIZE = 4 * 1024;
 const MAX_TRACKED_CLIENTS = 10000;
+const MAX_USERS = 10000;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isDevelopment = process.env.NODE_ENV === 'development';
 const hmacSecret = process.env.HMAC_SECRET;
@@ -219,6 +220,9 @@ app.post('/register', authRateLimit, async (c) => {
   const passwordHash = await hashPassword(password, salt);
   if (users.has(email)) {
     return renderRegister(c, 409, { email, error: 'An account with this email already exists.' });
+  }
+  if (users.size >= MAX_USERS) {
+    return renderRegister(c, 503, { email, error: 'Registration is temporarily unavailable. Please try again later.' });
   }
   users.set(email, { email, salt, passwordHash, sessionVersion: 0 });
   return renderRegister(c, 201, {
