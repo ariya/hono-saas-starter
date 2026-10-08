@@ -6,6 +6,7 @@ const { createHmac, randomBytes, scrypt, timingSafeEqual } = require('node:crypt
 const { promisify } = require('node:util');
 const path = require('node:path');
 const { deleteCookie, getCookie, setCookie } = require('hono/cookie');
+const { bodyLimit } = require('hono/body-limit');
 
 const scryptAsync = promisify(scrypt);
 
@@ -13,6 +14,9 @@ const SESSION_COOKIE = 'session';
 const SESSION_TTL = 7 * 60 * 60;
 const CSRF_TTL = 2 * 60 * 60;
 const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 128;
+const MAX_EMAIL_LENGTH = 254;
+const MAX_BODY_SIZE = 4 * 1024;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isDevelopment = process.env.NODE_ENV === 'development';
 const hmacSecret = process.env.HMAC_SECRET;
@@ -26,6 +30,7 @@ const eta = new Eta({ views: path.join(__dirname, 'views') });
 const users = new Map();
 
 app.use(secureHeaders());
+app.use(bodyLimit({ maxSize: MAX_BODY_SIZE, onError: (c) => c.text('Payload too large', 413) }));
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see you', 'Nice to have you here'];
 
@@ -88,6 +93,9 @@ const verifyPassword = async (password, user) => {
 };
 
 const authenticate = async (email, password) => {
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return null;
+  }
   const user = users.get(email);
   if (!user) {
     await hashPassword(password, 'timing-equalizer');
@@ -125,11 +133,14 @@ app.post('/register', async (c) => {
   }
   const email = formField(body, 'email').trim().toLowerCase();
   const password = formField(body, 'password');
-  if (!emailPattern.test(email)) {
+  if (email.length > MAX_EMAIL_LENGTH || !emailPattern.test(email)) {
     return renderRegister(c, 400, { email, error: 'Please enter a valid email address.' });
   }
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return renderRegister(c, 400, { email, error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` });
+  if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+    return renderRegister(c, 400, {
+      email,
+      error: `Password must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters.`
+    });
   }
   const salt = randomBytes(16).toString('hex');
   const passwordHash = await hashPassword(password, salt);

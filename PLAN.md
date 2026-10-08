@@ -25,7 +25,7 @@
 
 ### Critical
 
-- [ ] Cap request body size and password length; unbounded `parseBody` and scrypt input let one unauthenticated request exhaust memory and CPU.
+- [x] Cap request body size and password length; unbounded `parseBody` and scrypt input let one unauthenticated request exhaust memory and CPU.
 
 ### High
 
