@@ -1,5 +1,5 @@
 <% layout('./layout', { title: it.title }) %>
-<h1>Welcome</h1>
+<h1><%= it.welcome %></h1>
 <form method="post" action="/">
   <label>Email <input type="email" name="email" required /></label>
   <label>Password <input type="password" name="password" required /></label>
