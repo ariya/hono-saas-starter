@@ -1,5 +1,5 @@
 - [x] Implement the initial landing page route to display the sign-in screen.
-- [ ] Ensure a mobile-friendly, responsive viewport.
+- [x] Ensure a mobile-friendly, responsive viewport.
 - [ ] Refactor the sign-in page to use the Eta templating engine for backend rendering.
 - [ ] Implement a dynamic "Welcome" title that selects from 5 randomized options.
 - [ ] Initialize an in-memory User store (supporting email, password hash, and salt).
