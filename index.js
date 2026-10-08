@@ -5,7 +5,7 @@ const { Eta } = require('eta');
 const { createHmac, randomBytes, scrypt, timingSafeEqual } = require('node:crypto');
 const { promisify } = require('node:util');
 const path = require('node:path');
-const { getCookie, setCookie } = require('hono/cookie');
+const { deleteCookie, getCookie, setCookie } = require('hono/cookie');
 
 const scryptAsync = promisify(scrypt);
 
@@ -170,6 +170,11 @@ app.post('/', async (c) => {
     maxAge: SESSION_TTL
   });
   return c.redirect('/profile');
+});
+
+app.post('/signout', (c) => {
+  deleteCookie(c, SESSION_COOKIE, { path: '/', secure: !isDevelopment });
+  return c.redirect('/');
 });
 
 app.get('/health', (c) => c.text(`OK ${Date.now()}`));
