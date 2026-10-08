@@ -1,3 +1,5 @@
 <% layout('./layout', { title: it.title }) %>
+<nav style="display: flex; align-items: center;">
+  <strong><%= it.email %></strong>
+</nav>
 <h1>Profile</h1>
-<p>Signed in as <%= it.email %></p>
