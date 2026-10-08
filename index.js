@@ -65,6 +65,7 @@ app.post('/', async (c) => {
   }
   setCookie(c, SESSION_COOKIE, createSession(user.email), {
     httpOnly: true,
+    secure: true,
     sameSite: 'Lax',
     path: '/',
     maxAge: SESSION_TTL
