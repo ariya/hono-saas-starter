@@ -12,6 +12,11 @@ const scryptAsync = promisify(scrypt);
 const SESSION_COOKIE = 'session';
 const SESSION_TTL = 7 * 60 * 60;
 const isDevelopment = process.env.NODE_ENV === 'development';
+const hmacSecret = process.env.HMAC_SECRET;
+
+if (!hmacSecret) {
+  throw new Error('HMAC_SECRET environment variable is required');
+}
 
 const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
@@ -23,7 +28,7 @@ const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see yo
 
 const hashPassword = async (password, salt) => (await scryptAsync(password, salt, 64)).toString('hex');
 
-const signSession = (payload) => createHmac('sha256', process.env.HMAC_SECRET).update(payload).digest('base64url');
+const signSession = (payload) => createHmac('sha256', hmacSecret).update(payload).digest('base64url');
 
 const createSession = (email) => {
   const payload = Buffer.from(
