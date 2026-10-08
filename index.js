@@ -56,7 +56,9 @@ app.use(bodyLimit({ maxSize: MAX_BODY_SIZE, onError: (c) => c.text('Payload too 
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see you', 'Nice to have you here'];
 
-const hashPassword = async (password, salt) => (await scryptAsync(password, salt, 64)).toString('hex');
+const scryptOptions = { N: 2 ** 17, r: 8, p: 1, maxmem: 256 * 1024 * 1024 };
+
+const hashPassword = async (password, salt) => (await scryptAsync(password, salt, 64, scryptOptions)).toString('hex');
 
 const sign = (value) => createHmac('sha256', hmacSecret).update(value).digest('base64url');
 
