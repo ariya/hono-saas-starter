@@ -104,7 +104,12 @@ const renderSignin = (c, status = 200, data = {}) => {
   );
 };
 
-app.get('/', (c) => renderSignin(c));
+app.get('/', (c) => {
+  if (verifySession(getCookie(c, SESSION_COOKIE))) {
+    return c.redirect('/profile');
+  }
+  return renderSignin(c);
+});
 
 app.get('/profile', (c) => {
   const session = verifySession(getCookie(c, SESSION_COOKIE));
