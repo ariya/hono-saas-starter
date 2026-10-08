@@ -7,6 +7,7 @@ const { promisify } = require('node:util');
 const path = require('node:path');
 const { deleteCookie, getCookie, setCookie } = require('hono/cookie');
 const { bodyLimit } = require('hono/body-limit');
+const { serveStatic } = require('@hono/node-server/serve-static');
 
 const scryptAsync = promisify(scrypt);
 
@@ -31,7 +32,20 @@ const app = new Hono();
 const eta = new Eta({ views: path.join(__dirname, 'views') });
 const users = new Map();
 
-app.use(secureHeaders());
+app.use(
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+      imgSrc: ["'self'", 'data:'],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"]
+    }
+  })
+);
+app.use('/app.css', serveStatic({ root: './public' }));
 app.use(bodyLimit({ maxSize: MAX_BODY_SIZE, onError: (c) => c.text('Payload too large', 413) }));
 
 const welcomeTitles = ['Welcome', 'Welcome back', 'Hello there', 'Good to see you', 'Nice to have you here'];

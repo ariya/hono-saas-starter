@@ -1,0 +1,8 @@
+nav {
+  display: flex;
+  align-items: center;
+}
+
+.signout {
+  margin-left: auto;
+}

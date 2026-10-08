@@ -1,7 +1,7 @@
 <% layout('./layout', { title: it.title }) %>
-<nav style="display: flex; align-items: center;">
+<nav>
   <strong><%= it.email %></strong>
-  <form method="post" action="/signout" style="margin-left: auto;">
+  <form class="signout" method="post" action="/signout">
     <button type="submit">Sign Out</button>
   </form>
 </nav>
