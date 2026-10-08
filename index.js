@@ -5,7 +5,7 @@ const { Eta } = require('eta');
 const { createHmac, randomBytes, scrypt, timingSafeEqual } = require('node:crypto');
 const { promisify } = require('node:util');
 const path = require('node:path');
-const { setCookie } = require('hono/cookie');
+const { getCookie, setCookie } = require('hono/cookie');
 
 const scryptAsync = promisify(scrypt);
 
@@ -36,6 +36,27 @@ const createSession = (email) => {
     JSON.stringify({ sub: email, exp: Math.floor(Date.now() / 1000) + SESSION_TTL })
   ).toString('base64url');
   return `${payload}.${sign(`session.${payload}`)}`;
+};
+
+const verifySession = (token) => {
+  if (!token) {
+    return null;
+  }
+  const parts = token.split('.');
+  if (parts.length !== 2) {
+    return null;
+  }
+  const [payload, signature] = parts;
+  const expected = Buffer.from(sign(`session.${payload}`));
+  const actual = Buffer.from(signature);
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+    return null;
+  }
+  const session = JSON.parse(Buffer.from(payload, 'base64url').toString());
+  if (session.exp <= Math.floor(Date.now() / 1000) || !users.has(session.sub)) {
+    return null;
+  }
+  return session;
 };
 
 const createCsrfToken = () => {
@@ -84,6 +105,14 @@ const renderSignin = (c, status = 200, data = {}) => {
 };
 
 app.get('/', (c) => renderSignin(c));
+
+app.get('/profile', (c) => {
+  const session = verifySession(getCookie(c, SESSION_COOKIE));
+  if (!session) {
+    return c.redirect('/');
+  }
+  return c.html(eta.render('profile', { title: 'Profile', email: session.sub }));
+});
 
 app.post('/', async (c) => {
   const body = await c.req.parseBody();
