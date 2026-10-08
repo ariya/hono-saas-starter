@@ -21,8 +21,8 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isDevelopment = process.env.NODE_ENV === 'development';
 const hmacSecret = process.env.HMAC_SECRET;
 
-if (!hmacSecret) {
-  throw new Error('HMAC_SECRET environment variable is required');
+if (!hmacSecret || hmacSecret.length < 32) {
+  throw new Error('HMAC_SECRET environment variable must be at least 32 characters');
 }
 
 const app = new Hono();
