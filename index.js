@@ -11,6 +11,7 @@ const { bodyLimit } = require('hono/body-limit');
 const scryptAsync = promisify(scrypt);
 
 const SESSION_COOKIE = 'session';
+const CSRF_COOKIE = 'csrf';
 const SESSION_TTL = 7 * 60 * 60;
 const CSRF_TTL = 2 * 60 * 60;
 const MIN_PASSWORD_LENGTH = 8;
@@ -72,6 +73,18 @@ const createCsrfToken = () => {
   return `${data}.${sign(`csrf.${data}`)}`;
 };
 
+const issueCsrfToken = (c) => {
+  const token = createCsrfToken();
+  setCookie(c, CSRF_COOKIE, token, {
+    httpOnly: true,
+    secure: !isDevelopment,
+    sameSite: 'Strict',
+    path: '/',
+    maxAge: CSRF_TTL
+  });
+  return token;
+};
+
 const verifyCsrfToken = (token) => {
   const parts = token.split('.');
   if (parts.length !== 3) {
@@ -85,6 +98,14 @@ const verifyCsrfToken = (token) => {
   }
   const age = Math.floor(Date.now() / 1000) - Number(issuedAt);
   return age >= 0 && age <= CSRF_TTL;
+};
+
+const verifyCsrfRequest = (c, body) => {
+  const field = formField(body, 'csrf');
+  const cookie = getCookie(c, CSRF_COOKIE) ?? '';
+  const a = Buffer.from(field);
+  const b = Buffer.from(cookie);
+  return a.length === b.length && timingSafeEqual(a, b) && verifyCsrfToken(field);
 };
 
 const verifyPassword = async (password, user) => {
@@ -138,7 +159,7 @@ const authRateLimit = createRateLimiter(10, 15 * 60 * 1000);
 const renderSignin = (c, status = 200, data = {}) => {
   const welcome = welcomeTitles[Math.floor(Math.random() * welcomeTitles.length)];
   return c.html(
-    eta.render('signin', { title: 'Sign In', welcome, email: '', error: '', csrf: createCsrfToken(), ...data }),
+    eta.render('signin', { title: 'Sign In', welcome, email: '', error: '', csrf: issueCsrfToken(c), ...data }),
     status
   );
 };
@@ -151,13 +172,13 @@ app.get('/', (c) => {
 });
 
 const renderRegister = (c, status = 200, data = {}) =>
-  c.html(eta.render('register', { title: 'Register', email: '', error: '', csrf: createCsrfToken(), ...data }), status);
+  c.html(eta.render('register', { title: 'Register', email: '', error: '', csrf: issueCsrfToken(c), ...data }), status);
 
 app.get('/register', (c) => renderRegister(c));
 
 app.post('/register', authRateLimit, async (c) => {
   const body = await c.req.parseBody();
-  if (!verifyCsrfToken(formField(body, 'csrf'))) {
+  if (!verifyCsrfRequest(c, body)) {
     return renderRegister(c, 403, { error: 'Your form has expired. Please try again.' });
   }
   const email = formField(body, 'email').trim().toLowerCase();
@@ -193,7 +214,7 @@ app.get('/profile', (c) => {
 
 app.post('/', authRateLimit, async (c) => {
   const body = await c.req.parseBody();
-  if (!verifyCsrfToken(formField(body, 'csrf'))) {
+  if (!verifyCsrfRequest(c, body)) {
     return renderSignin(c, 403, { error: 'Your form has expired. Please try again.' });
   }
   const email = formField(body, 'email').trim().toLowerCase();
